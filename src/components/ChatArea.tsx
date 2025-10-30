@@ -35,6 +35,7 @@ interface ChatAreaProps {
   onUpdateTitle: (chatId: string, title: string) => void;
   onDeleteChat: (chatId: string) => void;
   onRegenerateMessage: (messageId: string) => void;
+  onEditMessage: (messageId: string, newContent: string) => void;
   isLoading: boolean;
   onStopGeneration: () => void;
   webSearchEnabled: boolean;
@@ -49,6 +50,7 @@ const ChatArea = ({
   onUpdateTitle,
   onDeleteChat,
   onRegenerateMessage,
+  onEditMessage,
   isLoading,
   onStopGeneration,
   webSearchEnabled,
@@ -59,6 +61,8 @@ const ChatArea = ({
   const [input, setInput] = useState('');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingMessageContent, setEditingMessageContent] = useState('');
   const [attachments, setAttachments] = useState<string[]>([]);
   const [puterPaths, setPuterPaths] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -151,6 +155,24 @@ const ChatArea = ({
     }
   };
 
+  const startEditingMessage = (messageId: string, content: string) => {
+    setEditingMessageId(messageId);
+    setEditingMessageContent(content);
+  };
+
+  const saveEditedMessage = () => {
+    if (editingMessageId && editingMessageContent.trim()) {
+      onEditMessage(editingMessageId, editingMessageContent);
+      setEditingMessageId(null);
+      setEditingMessageContent('');
+    }
+  };
+
+  const cancelEditingMessage = () => {
+    setEditingMessageId(null);
+    setEditingMessageContent('');
+  };
+
   if (!chat) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -168,7 +190,7 @@ const ChatArea = ({
   return (
     <div className="flex-1 flex flex-col h-screen">
       {/* Header */}
-      <div className="border-b border-border p-4 flex items-center justify-between bg-card/50 backdrop-blur-sm transition-all duration-300">
+      <div className="border-b border-border p-4 flex items-center justify-between bg-card/50 backdrop-blur-sm transition-all duration-300 animate-fade-in">
         <div className="flex-1">
           {isEditingTitle ? (
             <Input
@@ -200,7 +222,7 @@ const ChatArea = ({
           <Button
             variant="ghost"
             size="icon"
-            className="transition-all duration-200 hover:scale-110"
+            className="transition-all duration-200 hover:scale-110 hover:rotate-12"
             onClick={() => {
               const data = JSON.stringify(chat, null, 2);
               const blob = new Blob([data], { type: 'application/json' });
@@ -217,7 +239,7 @@ const ChatArea = ({
           <Button
             variant="ghost"
             size="icon"
-            className="transition-all duration-200 hover:scale-110 hover:text-destructive"
+            className="transition-all duration-200 hover:scale-110 hover:text-destructive hover:rotate-12"
             onClick={() => onDeleteChat(chat.id)}
           >
             <Trash2 className="w-5 h-5" />
@@ -232,15 +254,15 @@ const ChatArea = ({
             <div
               key={message.id}
               className={cn(
-                'flex gap-3 animate-slide-up w-full',
+                'flex gap-3 animate-scale-in w-full',
                 message.role === 'user' ? 'justify-end' : 'justify-start'
               )}
             >
               <div
                 className={cn(
-                  'max-w-[85%] min-w-0 rounded-2xl p-4 shadow-lg transition-all duration-300 hover:shadow-xl',
+                  'max-w-[85%] min-w-0 rounded-2xl p-4 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02]',
                   message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-primary text-primary-foreground glow-blue'
                     : 'bg-card border border-border'
                 )}
                 style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
@@ -264,6 +286,33 @@ const ChatArea = ({
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {message.content}
                     </ReactMarkdown>
+                  </div>
+                ) : editingMessageId === message.id ? (
+                  <div className="space-y-2 animate-scale-in">
+                    <Textarea
+                      value={editingMessageContent}
+                      onChange={(e) => setEditingMessageContent(e.target.value)}
+                      className="min-h-[100px] bg-background/50"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={saveEditedMessage}
+                        disabled={isLoading}
+                        className="transition-all duration-200 hover:scale-105"
+                      >
+                        Save & Regenerate
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={cancelEditingMessage}
+                        className="transition-all duration-200 hover:scale-105"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <p className="whitespace-pre-wrap break-words overflow-wrap-anywhere min-w-0" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
@@ -296,19 +345,32 @@ const ChatArea = ({
                     </Button>
                   </div>
                 )}
+                {message.role === 'user' && !editingMessageId && (
+                  <div className="flex justify-end mt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs transition-all duration-200 hover:scale-105"
+                      onClick={() => startEditingMessage(message.id, message.content)}
+                    >
+                      <Edit2 className="w-3 h-3 mr-1" />
+                      Edit
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
           {isLoading && (
-            <div className="flex gap-3 animate-slide-up items-start">
-              <div className="bg-card border border-border rounded-2xl p-4 shadow-lg flex items-center gap-3">
+            <div className="flex gap-3 animate-bounce-in items-start">
+              <div className="bg-card border border-border rounded-2xl p-4 shadow-lg flex items-center gap-3 animate-pulse-glow">
                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 <span className="text-sm text-muted-foreground">Generating response...</span>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={onStopGeneration}
-                  className="gap-2 ml-2 h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="gap-2 ml-2 h-8 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all duration-200 hover:scale-110"
                 >
                   <X className="w-4 h-4" />
                   Stop
@@ -320,7 +382,7 @@ const ChatArea = ({
       </ScrollArea>
 
       {/* Input Area */}
-      <div className="border-t border-border p-4 bg-card/50 backdrop-blur-sm">
+      <div className="border-t border-border p-4 bg-card/50 backdrop-blur-sm animate-fade-in">
         <div className="max-w-4xl mx-auto space-y-3">
           {/* Toggles */}
           <div className="flex items-center gap-6 text-sm">
@@ -405,13 +467,13 @@ const ChatArea = ({
             <Button
               onClick={handleSend}
               disabled={isLoading}
-              className="glow-blue transition-all duration-300 hover:scale-110"
+              className="glow-blue-strong transition-all duration-300 hover:scale-110 hover:rotate-12"
               size="icon"
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                <Send className="w-5 h-5 transition-transform duration-200 hover:translate-x-1" />
+                <Send className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
               )}
             </Button>
           </div>

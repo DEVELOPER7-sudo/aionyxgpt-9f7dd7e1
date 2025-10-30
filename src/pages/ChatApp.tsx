@@ -9,6 +9,7 @@ import { Menu, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/useTheme';
 import { useChatPersistence } from '@/hooks/useChatPersistence';
+import MotionBackground from '@/components/MotionBackground';
 
 // Lazy load heavy components
 const SettingsPanel = lazy(() => import('@/components/SettingsPanel'));
@@ -302,7 +303,34 @@ What would you like to work on today?`,
     storage.updateChat(currentChatId!, { messages: previousMessages });
     setChats(chats.map(c => c.id === currentChatId ? updatedChat : c));
 
-    await handleTextChat(previousMessages, currentChatId!);
+    setIsLoading(true);
+    try {
+      await handleTextChat(previousMessages, currentChatId!);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditMessage = async (messageId: string, newContent: string) => {
+    if (!currentChat) return;
+    const messageIndex = currentChat.messages.findIndex(m => m.id === messageId);
+    if (messageIndex === -1) return;
+
+    // Update the message content and delete all messages after it
+    const updatedMessages = currentChat.messages.slice(0, messageIndex);
+    const editedMessage = { ...currentChat.messages[messageIndex], content: newContent };
+    updatedMessages.push(editedMessage);
+
+    storage.updateChat(currentChatId!, { messages: updatedMessages });
+    setChats(chats.map(c => c.id === currentChatId ? { ...c, messages: updatedMessages } : c));
+
+    // Regenerate AI response
+    setIsLoading(true);
+    try {
+      await handleTextChat(updatedMessages, currentChatId!);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleUpdateSettings = (newSettings: AppSettings) => {
@@ -344,7 +372,8 @@ What would you like to work on today?`,
   };
 
   return (
-    <div className="flex h-screen w-full bg-background overflow-hidden">
+    <div className="flex h-screen w-full bg-background overflow-hidden relative">
+      <MotionBackground />
       {/* Mobile Menu Button */}
       <div className="md:hidden fixed top-4 left-4 z-50">
         <Button
@@ -400,6 +429,7 @@ What would you like to work on today?`,
             onUpdateTitle={handleUpdateTitle}
             onDeleteChat={handleDeleteChat}
             onRegenerateMessage={handleRegenerateMessage}
+            onEditMessage={handleEditMessage}
             isLoading={isLoading}
             onStopGeneration={handleStopGeneration}
             webSearchEnabled={webSearchEnabled}
