@@ -53,7 +53,7 @@ const ChatSidebar = ({
       {/* Header */}
       <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
         {!collapsed && (
-          <h2 className="font-bold text-lg">AI Studio</h2>
+          <h2 className="font-bold text-lg">OnyxGPT</h2>
         )}
         <Button
           variant="ghost"

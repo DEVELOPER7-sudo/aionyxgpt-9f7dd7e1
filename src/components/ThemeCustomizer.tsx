@@ -40,7 +40,7 @@ export const ThemeCustomizer = ({ settings, onUpdateSettings }: ThemeCustomizerP
     <Card className="p-6 space-y-4">
       <h2 className="text-xl font-semibold">Theme Customization</h2>
       <p className="text-sm text-muted-foreground">
-        Choose a color theme for your AI Studio
+        Choose a color theme for your OnyxGPT
       </p>
 
       <div className="space-y-3">

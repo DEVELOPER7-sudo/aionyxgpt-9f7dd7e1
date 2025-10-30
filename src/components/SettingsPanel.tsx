@@ -148,7 +148,7 @@ const SettingsPanel = ({
 
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="text-model">Text Model</Label>
+            <Label htmlFor="text-model">Text Model (Standard)</Label>
             <Select
               value={localSettings.textModel}
               onValueChange={(value) =>
@@ -159,15 +159,44 @@ const SettingsPanel = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="max-h-[400px]">
-                {ALL_TEXT_MODELS.map((model: any) => (
+                {ALL_TEXT_MODELS.filter((model: any) => !model.isCustom).map((model: any) => (
                   <SelectItem key={model.id} value={model.id}>
-                    {model.name} ({model.provider}){model.isCustom && ' ✨'}
+                    {model.name} ({model.provider})
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="custom-model-select">Text Model (Custom) ✨</Label>
+            <Select
+              value={customModels.includes(localSettings.textModel) ? localSettings.textModel : ''}
+              onValueChange={(value) =>
+                setLocalSettings({ ...localSettings, textModel: value })
+              }
+            >
+              <SelectTrigger id="custom-model-select" className="bg-input">
+                <SelectValue placeholder="Select custom model" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[400px]">
+                {customModels.length === 0 ? (
+                  <SelectItem value="none" disabled>
+                    No custom models added yet
+                  </SelectItem>
+                ) : (
+                  customModels.map((modelId) => (
+                    <SelectItem key={modelId} value={modelId}>
+                      {beautifyModelName(modelId)}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6 pt-4">
           <div className="space-y-2">
             <Label htmlFor="image-model">Image Model</Label>
             <Select
