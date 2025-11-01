@@ -266,7 +266,9 @@ What would you like to work on today?`,
             if (typeof text === 'string') {
               full += text;
               assistantMessage.content = full;
-              const updated = [...messages, assistantMessage];
+              // Update the existing assistant message (last item in startMessages)
+              const updated = [...startMessages];
+              updated[updated.length - 1] = { ...assistantMessage };
               storage.updateChat(chatId, { messages: updated });
               setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: updated } : c)));
             }
@@ -276,7 +278,8 @@ What would you like to work on today?`,
           else if (Array.isArray(res)) full = res.map((p: any) => p?.text || '').join('');
           else if (res && typeof res === 'object' && typeof (res as any).text === 'string') full = (res as any).text;
           assistantMessage.content = (full || '').trim();
-          const updated = [...messages, assistantMessage];
+          const updated = [...startMessages];
+          updated[updated.length - 1] = { ...assistantMessage };
           storage.updateChat(chatId, { messages: updated });
           setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: updated } : c)));
         }
