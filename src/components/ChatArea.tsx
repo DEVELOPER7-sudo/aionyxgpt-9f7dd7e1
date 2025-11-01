@@ -163,6 +163,11 @@ const ChatArea = ({
 
   const saveTitle = () => {
     if (chat && editedTitle.trim()) {
+      // Validate title length
+      if (editedTitle.length > 200) {
+        toast.error('Title too long (max 200 characters)');
+        return;
+      }
       onUpdateTitle(chat.id, editedTitle);
       setIsEditingTitle(false);
     }

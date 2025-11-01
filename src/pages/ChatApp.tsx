@@ -162,10 +162,39 @@ What would you like to work on today?`,
     // @ts-ignore - Puter is loaded via script tag
     const puter = window.puter;
 
-    // Prepare basics
-    const baseMessages = messages.map((m) => ({ role: m.role, content: m.content }));
+    // Validate input - extract user message first
     const lastUser = [...messages].reverse().find((m) => m.role === 'user');
     const userText = lastUser?.content ?? '';
+    
+    if (!userText.trim() && (!attachments || attachments.length === 0)) return;
+    
+    // Validate message length
+    if (userText.length > 10000) {
+      toast.error('Message too long (max 10,000 characters)');
+      setIsLoading(false);
+      return;
+    }
+    
+    // Validate attachments
+    if (attachments && attachments.length > 0) {
+      if (attachments.length > 10) {
+        toast.error('Too many attachments (max 10)');
+        setIsLoading(false);
+        return;
+      }
+      // Validate attachment URLs are from Supabase
+      const invalidAttachment = attachments.find(url => 
+        !url.includes('supabase.co/storage') && !url.includes('localhost')
+      );
+      if (invalidAttachment) {
+        toast.error('Invalid file source');
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Prepare basics
+    const baseMessages = messages.map((m) => ({ role: m.role, content: m.content }));
 
     // Use selected model (do not force a single default)
     const modelId = settings.textModel;

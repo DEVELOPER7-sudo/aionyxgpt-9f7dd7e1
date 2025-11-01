@@ -16,6 +16,26 @@ export const useFileUpload = () => {
 
   const uploadFile = async (file: File): Promise<UploadedFile | null> => {
     setIsUploading(true);
+    
+    // Validate file size (50MB max)
+    const MAX_SIZE = 50 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      toast.error(`File too large: ${file.name} (max 50MB)`);
+      setIsUploading(false);
+      return null;
+    }
+    
+    // Validate file type
+    const ALLOWED_TYPES = [
+      'image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp',
+      'text/plain', 'application/json', 'application/xml', 'text/xml', 'application/pdf'
+    ];
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast.error(`File type not allowed: ${file.name}`);
+      setIsUploading(false);
+      return null;
+    }
+    
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -41,16 +61,20 @@ export const useFileUpload = () => {
         throw uploadError;
       }
 
-      // Get public URL for the file
-      const { data: { publicUrl } } = supabase.storage
+      // Get signed URL with 1 hour expiry (private bucket)
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from('chat-files')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600); // 1 hour expiry
+
+      if (signedUrlError || !signedUrlData) {
+        throw new Error('Failed to generate file URL');
+      }
       
       const uploadedFileData: UploadedFile = {
         name: file.name,
         size: file.size,
         type: file.type,
-        url: publicUrl,
+        url: signedUrlData.signedUrl,
         storagePath: fileName,
       };
 
