@@ -13,6 +13,7 @@ import { useChatPersistence } from '@/hooks/useChatPersistence';
 import { useAuth } from '@/hooks/useAuth';
 import { useChatSync } from '@/hooks/useChatSync';
 import MotionBackground from '@/components/MotionBackground';
+import { createPuterAPILogger } from '@/lib/api-logger';
 
 // Lazy load heavy components
 const SettingsPanel = lazy(() => import('@/components/SettingsPanel'));
@@ -204,6 +205,8 @@ What would you like to work on today?`,
           console.log('[DEBUG] Vision chat using URL:', attachments[0], 'model:', modelId);
         }
 
+        const logger = createPuterAPILogger();
+        
         const assistantMessage: Message = {
           id: Date.now().toString(),
           role: 'assistant',
@@ -219,7 +222,8 @@ What would you like to work on today?`,
         storage.updateChat(chatId, { messages: startMessages });
         setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: startMessages } : c)));
 
-        const res = await puter.ai.chat(userText || 'What do you see?', attachments[0], { model: modelId });
+        const visionParams = { prompt: userText || 'What do you see?', imageUrl: attachments[0], model: modelId };
+        const res = await puter.ai.chat(visionParams.prompt, visionParams.imageUrl, { model: visionParams.model });
 
         let full = '';
         const hasAsyncIter = (res as any)?.[Symbol.asyncIterator]?.bind(res);
@@ -244,6 +248,8 @@ What would you like to work on today?`,
           setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: updated } : c)));
         }
 
+        logger.logSuccess('puter.ai.chat (vision)', visionParams, full);
+
         // Auto-generate title for first turn
         if (messages.length === 1) {
           const title = messages[0].content.slice(0, 50) + (messages[0].content.length > 50 ? '...' : '');
@@ -251,6 +257,9 @@ What would you like to work on today?`,
           setChats(chats.map((c) => (c.id === chatId ? { ...c, title } : c)));
         }
       } catch (err) {
+        const logger = createPuterAPILogger();
+        logger.logError('puter.ai.chat (vision)', { prompt: userText, imageUrl: attachments?.[0], model: modelId }, err);
+        
         // Only log detailed errors in development
         if (import.meta.env.DEV) {
           console.error('Vision chat error:', err);
@@ -287,38 +296,56 @@ What would you like to work on today?`,
     const controller = new AbortController();
     setAbortController(controller);
 
-    const response = await puter.ai.chat(formattedMessages, {
-      model: modelId,
-      stream: true,
-      temperature: settings.temperature,
-      max_tokens: settings.maxTokens,
-    });
-
-    let fullResponse = '';
-    const assistantMessage: Message = {
-      id: Date.now().toString(),
-      role: 'assistant',
-      content: '',
-      timestamp: Date.now(),
+    const logger = createPuterAPILogger();
+    const chatParams = {
+      messages: formattedMessages,
+      options: {
+        model: modelId,
+        stream: true,
+        temperature: settings.temperature,
+        max_tokens: settings.maxTokens,
+      }
     };
 
-    const chat = chats.find(c => c.id === chatId);
-    if (!chat) return;
-
     try {
-      for await (const part of response) {
-        if (controller.signal.aborted) {
-          break;
+      const response = await puter.ai.chat(formattedMessages, {
+        model: modelId,
+        stream: true,
+        temperature: settings.temperature,
+        max_tokens: settings.maxTokens,
+      });
+
+      let fullResponse = '';
+      const assistantMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '',
+        timestamp: Date.now(),
+      };
+
+      const chat = chats.find(c => c.id === chatId);
+      if (!chat) return;
+
+      try {
+        for await (const part of response) {
+          if (controller.signal.aborted) {
+            break;
+          }
+          
+          fullResponse += part?.text || '';
+          assistantMessage.content = fullResponse;
+          const updatedMessages = [...messages, assistantMessage];
+          storage.updateChat(chatId, { messages: updatedMessages });
+          setChats(prevChats => prevChats.map(c => c.id === chatId ? { ...c, messages: updatedMessages } : c));
         }
-        
-        fullResponse += part?.text || '';
-        assistantMessage.content = fullResponse;
-        const updatedMessages = [...messages, assistantMessage];
-        storage.updateChat(chatId, { messages: updatedMessages });
-        setChats(prevChats => prevChats.map(c => c.id === chatId ? { ...c, messages: updatedMessages } : c));
+      } finally {
+        setAbortController(null);
       }
-    } finally {
-      setAbortController(null);
+
+      logger.logSuccess('puter.ai.chat (streaming)', chatParams, fullResponse);
+    } catch (streamError) {
+      logger.logError('puter.ai.chat (streaming)', chatParams, streamError);
+      throw streamError;
     }
 
     // Auto-generate title for first message
