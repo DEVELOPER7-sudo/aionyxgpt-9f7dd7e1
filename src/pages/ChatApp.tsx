@@ -389,7 +389,7 @@ What would you like to work on today?`,
         onSignOut={signOut}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         {/* Sidebar */}
         <div
           className={cn(
@@ -425,7 +425,7 @@ What would you like to work on today?`,
       )}
 
         {/* Main Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden min-h-0 flex flex-col">
         {currentView === 'chat' && (
           <ChatArea
             chat={currentChat}

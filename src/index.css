@@ -74,6 +74,11 @@ All colors MUST be HSL.
   textarea {
     font-size: 16px !important;
   }
+
+  /* Safe area for mobile devices */
+  .safe-bottom {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
 }
 
 @layer utilities {

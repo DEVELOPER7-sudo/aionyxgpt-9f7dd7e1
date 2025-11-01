@@ -208,9 +208,9 @@ const ChatArea = ({
   }
 
   return (
-    <div className="flex flex-col h-screen w-full overflow-hidden">
+    <div className="flex flex-col h-full w-full overflow-hidden">
       {/* Header */}
-      <div className="border-b border-border p-3 md:p-4 flex items-center justify-between bg-card/50 backdrop-blur-sm flex-shrink-0">
+      <div className="border-b border-border p-3 md:p-4 flex items-center justify-between bg-card/50 backdrop-blur-sm flex-shrink-0 z-10">
         <div className="flex-1 min-w-0">
           {isEditingTitle ? (
             <Input
@@ -268,7 +268,7 @@ const ChatArea = ({
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-2 md:p-4">
+      <div className="flex-1 overflow-y-auto p-2 md:p-4" ref={scrollRef}>
         <div className="max-w-4xl mx-auto space-y-4 pb-4">{chat.messages.map((message) => (
             <div
               key={message.id}
@@ -397,10 +397,10 @@ const ChatArea = ({
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Input Area */}
-      <div className="border-t border-border p-2 md:p-4 bg-card/50 backdrop-blur-sm flex-shrink-0">
+      <div className="border-t border-border p-2 md:p-4 bg-card/50 backdrop-blur-sm flex-shrink-0 z-10 safe-bottom">
         <div className="max-w-4xl mx-auto space-y-2 md:space-y-3">
           {/* Toggles */}
           <div className="flex flex-wrap items-center gap-3 md:gap-6 text-xs md:text-sm">
