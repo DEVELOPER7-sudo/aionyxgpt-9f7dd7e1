@@ -73,8 +73,8 @@ const ChatArea = ({
   const [editedTitle, setEditedTitle] = useState('');
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingMessageContent, setEditingMessageContent] = useState('');
-  const [analyzeImages, setAnalyzeImages] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showFileUrls, setShowFileUrls] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { analyzeImage, isAnalyzing } = useVisionAI();
@@ -104,16 +104,21 @@ const ChatArea = ({
     if (!input.trim() && uploadedFiles.length === 0) return;
     if (isLoading || isAnalyzing) return; // Prevent multiple sends
     
-    // If images are attached and analyze is enabled, analyze them first
-    if (analyzeImages && uploadedFiles.length > 0) {
+    // Auto-analyze all uploaded files
+    if (uploadedFiles.length > 0) {
       try {
         const analyses = await Promise.all(
-          uploadedFiles.map(file => analyzeImage(file.url, input || "What do you see in this image?", currentModel))
+          uploadedFiles.map(file => 
+            analyzeImage(file.url, input || "Analyze this file and provide detailed insights.", currentModel)
+          )
         );
         const combinedAnalysis = analyses.join('\n\n---\n\n');
-        const enhancedInput = `${input}\n\n[Vision AI Analysis]:\n${combinedAnalysis}`;
+        const enhancedInput = input 
+          ? `${input}\n\n[File Analysis]:\n${combinedAnalysis}` 
+          : `[File Analysis]:\n${combinedAnalysis}`;
         onSendMessage(enhancedInput, uploadedFiles.map(f => f.storagePath));
       } catch (error) {
+        console.error('Analysis error:', error);
         onSendMessage(input, uploadedFiles.map(f => f.storagePath));
       }
     } else {
@@ -123,6 +128,7 @@ const ChatArea = ({
     // clear UI state
     setInput('');
     clearFiles();
+    setShowFileUrls(false);
     if (chat) localStorage.removeItem(`draft_${chat.id}`);
   };
 
@@ -392,29 +398,65 @@ const ChatArea = ({
       {/* Input Area */}
       <div className="border-t border-border p-2 md:p-4 bg-card/50 backdrop-blur-sm flex-shrink-0 z-10 safe-bottom">
         <div className="max-w-4xl mx-auto space-y-2 md:space-y-3">
-          {/* Attachments */}
+          {/* Attachments with Preview and URL */}
           {uploadedFiles.length > 0 && (
-            <div className="flex gap-2 flex-wrap">
-              {uploadedFiles.map((file, i) => (
-                <div key={i} className="relative group">
-                  {file.type.startsWith('image/') ? (
-                    <img src={file.url} alt={file.name} className="w-16 h-16 rounded object-cover" />
-                  ) : (
-                    <div className="w-16 h-16 rounded bg-secondary flex items-center justify-center">
-                      <FileText className="w-8 h-8 text-muted-foreground" />
-                    </div>
-                  )}
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100"
-                    onClick={() => removeFile(file.storagePath)}
-                  >
-                    ×
-                  </Button>
-                  <p className="text-xs mt-1 truncate w-16" title={file.name}>{file.name}</p>
-                </div>
-              ))}
+            <div className="space-y-2 animate-scale-in">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {uploadedFiles.length} file(s) attached • Auto-analyzing on send
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowFileUrls(!showFileUrls)}
+                  className="h-6 text-xs"
+                >
+                  {showFileUrls ? 'Hide URLs' : 'Show URLs'}
+                </Button>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {uploadedFiles.map((file, i) => (
+                  <div key={i} className="relative group">
+                    {file.type.startsWith('image/') ? (
+                      <img 
+                        src={file.url} 
+                        alt={file.name} 
+                        className="w-20 h-20 rounded-lg object-cover border border-border shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-lg bg-secondary border border-border flex items-center justify-center">
+                        <FileText className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeFile(file.storagePath)}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                    <p className="text-xs mt-1 truncate w-20" title={file.name}>{file.name}</p>
+                    {showFileUrls && (
+                      <div className="absolute bottom-full mb-2 left-0 right-0 bg-popover text-popover-foreground border border-border rounded p-2 shadow-lg text-xs break-all z-20 w-64">
+                        <p className="font-semibold mb-1">URL:</p>
+                        <p className="font-mono text-xs">{file.url}</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-1 h-6 w-full"
+                          onClick={() => {
+                            navigator.clipboard.writeText(file.url);
+                            toast.success('URL copied');
+                          }}
+                        >
+                          Copy URL
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -530,19 +572,11 @@ const ChatArea = ({
                     id="deep-search-adv"
                   />
                 </div>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="vision-ai-adv" className="flex items-center gap-2 cursor-pointer">
-                    <ImageIcon className="w-4 h-4" />
-                    Vision AI
-                  </Label>
-                  <Switch
-                    checked={analyzeImages}
-                    onCheckedChange={setAnalyzeImages}
-                    id="vision-ai-adv"
-                  />
-                </div>
               </div>
+              
+              <p className="text-xs text-muted-foreground pt-2 border-t border-border">
+                💡 Vision AI auto-analyzes all uploaded files
+              </p>
             </div>
           )}
         </div>

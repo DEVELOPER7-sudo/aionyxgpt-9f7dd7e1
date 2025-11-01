@@ -6,7 +6,7 @@ export const useVisionAI = () => {
 
   const analyzeImage = async (
     imageUrl: string, 
-    prompt: string = "What do you see in this image? Provide a detailed description.",
+    prompt: string = "Analyze this file and provide detailed insights about its content.",
     model: string = "gpt-5-nano"
   ): Promise<string> => {
     setIsAnalyzing(true);
@@ -18,7 +18,7 @@ export const useVisionAI = () => {
         throw new Error('Puter AI not available');
       }
 
-      // Use the image URL directly for vision analysis with any model
+      // Use Puter.js vision API
       const response = await puter.ai.chat(prompt, imageUrl, {
         model: model,
       });
@@ -31,7 +31,7 @@ export const useVisionAI = () => {
       return fullResponse;
     } catch (error: any) {
       console.error('Vision AI error:', error);
-      toast.error('Failed to analyze image');
+      toast.error('Failed to analyze file');
       throw error;
     } finally {
       setIsAnalyzing(false);
