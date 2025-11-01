@@ -158,8 +158,13 @@ What would you like to work on today?`,
   };
 
   const handleTextChat = async (messages: Message[], chatId: string, attachments?: string[]) => {
-    // @ts-ignore - Puter is loaded via script tag
-    const puter = window.puter;
+    // @ts-ignore - Puter is loaded via script tag (HTML style)
+    const puter = (window as any)?.puter;
+    if (!puter?.ai?.chat) {
+      toast.error('AI service not available');
+      setIsLoading(false);
+      return;
+    }
 
     // Validate input - extract user message first
     const lastUser = [...messages].reverse().find((m) => m.role === 'user');
@@ -217,13 +222,10 @@ What would you like to work on today?`,
       attachments = validAttachments;
     }
 
-    // Prepare basics
-    const baseMessages = messages.map((m) => ({ role: m.role, content: m.content }));
-
     // Use selected model (do not force a single default)
     const modelId = settings.textModel;
 
-    // If we have attachments, call vision like: puter.ai.chat(prompt, imageUrl, { model })
+    // If we have attachments, call vision: puter.ai.chat(prompt, imageUrl, { model })
     if (attachments && attachments.length > 0) {
       try {
         // Only log in development
@@ -240,13 +242,10 @@ What would you like to work on today?`,
           timestamp: Date.now(),
         };
 
-        const chat = chats.find((c) => c.id === chatId);
-        if (!chat) return;
-
-        // Insert placeholder assistant message
-        const startMessages = [...messages, assistantMessage];
-        storage.updateChat(chatId, { messages: startMessages });
-        setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: startMessages } : c)));
+        // Create the initial messages array with the new assistant message
+        const updatedMessages = [...messages, assistantMessage];
+        storage.updateChat(chatId, { messages: updatedMessages });
+        setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: updatedMessages } : c)));
 
         // CORRECT API FORMAT: puter.ai.chat(prompt, imageUrl, { model })
         const imageUrl = attachments[0];
@@ -265,23 +264,20 @@ What would you like to work on today?`,
             const text = part?.text ?? part?.delta ?? part?.message?.content ?? '';
             if (typeof text === 'string') {
               full += text;
-              assistantMessage.content = full;
-              // Update the existing assistant message (last item in startMessages)
-              const updated = [...startMessages];
-              updated[updated.length - 1] = { ...assistantMessage };
-              storage.updateChat(chatId, { messages: updated });
-              setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: updated } : c)));
+              // Update the last message (assistant) with accumulated content
+              const currentMessages = [...messages, { ...assistantMessage, content: full }];
+              storage.updateChat(chatId, { messages: currentMessages });
+              setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: currentMessages } : c)));
             }
           }
         } else {
           if (typeof res === 'string') full = res;
           else if (Array.isArray(res)) full = res.map((p: any) => p?.text || '').join('');
           else if (res && typeof res === 'object' && typeof (res as any).text === 'string') full = (res as any).text;
-          assistantMessage.content = (full || '').trim();
-          const updated = [...startMessages];
-          updated[updated.length - 1] = { ...assistantMessage };
-          storage.updateChat(chatId, { messages: updated });
-          setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: updated } : c)));
+          
+          const finalMessages = [...messages, { ...assistantMessage, content: (full || '').trim() }];
+          storage.updateChat(chatId, { messages: finalMessages });
+          setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: finalMessages } : c)));
         }
 
         logger.logSuccess('puter.ai.chat (vision)', { prompt, imageUrl, model: modelId }, full);
@@ -290,7 +286,7 @@ What would you like to work on today?`,
         if (messages.length === 1) {
           const title = messages[0].content.slice(0, 50) + (messages[0].content.length > 50 ? '...' : '');
           storage.updateChat(chatId, { title });
-          setChats(chats.map((c) => (c.id === chatId ? { ...c, title } : c)));
+          setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, title } : c)));
         }
       } catch (err) {
         const logger = createPuterAPILogger();
@@ -300,21 +296,22 @@ What would you like to work on today?`,
         if (import.meta.env.DEV) {
           console.error('Vision chat error:', err);
         }
-        const assistantMessage: Message = {
+        const errorMessage: Message = {
           id: Date.now().toString(),
           role: 'assistant',
           content: 'Failed to get response from AI. Please try again.',
           timestamp: Date.now(),
         };
-        const updated = [...messages, assistantMessage];
-        storage.updateChat(chatId, { messages: updated });
-        setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: updated } : c)));
+        const errorMessages = [...messages, errorMessage];
+        storage.updateChat(chatId, { messages: errorMessages });
+        setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: errorMessages } : c)));
       }
       return; // Important: do not run the regular text-only flow
     }
 
     // Regular text-only flow with system prompt
     const systemPrompt = `You are a helpful AI assistant. ${webSearchEnabled ? 'You may use web knowledge if your model supports it.' : ''} ${deepSearchEnabled ? 'Prefer deeper step-by-step reasoning when needed.' : ''}`.trim();
+    const baseMessages = messages.map((m) => ({ role: m.role, content: m.content }));
     let formattedMessages: any[] = [{ role: 'system', content: systemPrompt }, ...baseMessages];
 
     // Only log in development
@@ -369,10 +366,10 @@ What would you like to work on today?`,
           }
           
           fullResponse += part?.text || '';
-          assistantMessage.content = fullResponse;
-          const updatedMessages = [...messages, assistantMessage];
-          storage.updateChat(chatId, { messages: updatedMessages });
-          setChats(prevChats => prevChats.map(c => c.id === chatId ? { ...c, messages: updatedMessages } : c));
+          // Always update with the same assistant message, just changing content
+          const currentMessages = [...messages, { ...assistantMessage, content: fullResponse }];
+          storage.updateChat(chatId, { messages: currentMessages });
+          setChats(prevChats => prevChats.map(c => c.id === chatId ? { ...c, messages: currentMessages } : c));
         }
       } finally {
         setAbortController(null);

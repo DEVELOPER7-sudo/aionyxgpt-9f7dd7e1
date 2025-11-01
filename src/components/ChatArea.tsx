@@ -378,22 +378,27 @@ const ChatArea = ({
               </div>
             </div>
           ))}
-          {isLoading && (
-            <div className="flex gap-3 animate-bounce-in items-start">
-              <div className="bg-card border border-border rounded-2xl p-4 shadow-lg flex items-center gap-3 animate-pulse-glow">
-                <LoadingDots />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onStopGeneration}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Square className="w-4 h-4 mr-1" />
-                  Stop
-                </Button>
+          {/* Show loading spinner only when there isn't a streaming assistant message */}
+          {(() => {
+            const last = chat.messages[chat.messages.length - 1];
+            const showSpinner = isLoading && !(last && last.role === 'assistant');
+            return showSpinner ? (
+              <div className="flex gap-3 animate-bounce-in items-start">
+                <div className="bg-card border border-border rounded-2xl p-4 shadow-lg flex items-center gap-3 animate-pulse-glow">
+                  <LoadingDots />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onStopGeneration}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Square className="w-4 h-4 mr-1" />
+                    Stop
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
+            ) : null;
+          })()}
         </div>
       </div>
 
