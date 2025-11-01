@@ -7,6 +7,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Plus, Trash2, Save, Brain } from 'lucide-react';
 import { toast } from 'sonner';
+import { z } from 'zod';
+
+const memorySchema = z.object({
+  key: z.string()
+    .trim()
+    .min(1, 'Key cannot be empty')
+    .max(100, 'Key must be less than 100 characters')
+    .regex(/^[a-zA-Z0-9\s_-]+$/, 'Only letters, numbers, spaces, hyphens, and underscores allowed'),
+  value: z.string()
+    .trim()
+    .min(1, 'Value cannot be empty')
+    .max(2000, 'Value must be less than 2000 characters')
+});
 
 const MemoryEditor = () => {
   const [memories, setMemories] = useState<Memory[]>(storage.getMemories());
@@ -15,15 +28,17 @@ const MemoryEditor = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const handleAdd = () => {
-    if (!newKey.trim() || !newValue.trim()) {
-      toast.error('Both key and value are required');
+    const result = memorySchema.safeParse({ key: newKey, value: newValue });
+    
+    if (!result.success) {
+      toast.error(result.error.errors[0].message);
       return;
     }
 
     const memory: Memory = {
       id: Date.now().toString(),
-      key: newKey,
-      value: newValue,
+      key: result.data.key,
+      value: result.data.value,
       timestamp: Date.now(),
     };
 
@@ -35,13 +50,15 @@ const MemoryEditor = () => {
   };
 
   const handleUpdate = (id: string, key: string, value: string) => {
-    if (!key.trim() || !value.trim()) {
-      toast.error('Both key and value are required');
+    const result = memorySchema.safeParse({ key, value });
+    
+    if (!result.success) {
+      toast.error(result.error.errors[0].message);
       return;
     }
 
-    storage.updateMemory(id, { key, value });
-    setMemories(memories.map(m => m.id === id ? { ...m, key, value } : m));
+    storage.updateMemory(id, { key: result.data.key, value: result.data.value });
+    setMemories(memories.map(m => m.id === id ? { ...m, key: result.data.key, value: result.data.value } : m));
     setEditingId(null);
     toast.success('Memory updated');
   };
