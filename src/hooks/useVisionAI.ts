@@ -5,7 +5,7 @@ export const useVisionAI = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const analyzeImage = async (
-    imagePath: string, 
+    imageUrl: string, 
     prompt: string = "What do you see in this image? Provide a detailed description.",
     model: string = "gpt-5-nano"
   ): Promise<string> => {
@@ -18,8 +18,8 @@ export const useVisionAI = () => {
         throw new Error('Puter AI not available');
       }
 
-      // Use the specified model for vision analysis (supports all vision-capable models)
-      const response = await puter.ai.chat(prompt, imagePath, {
+      // Use the image URL directly for vision analysis with any model
+      const response = await puter.ai.chat(prompt, imageUrl, {
         model: model,
       });
 

@@ -107,16 +107,16 @@ const ChatArea = ({
     if (analyzeImages && uploadedFiles.length > 0) {
       try {
         const analyses = await Promise.all(
-          uploadedFiles.map(file => analyzeImage(file.puterPath, input || "What do you see in this image?", currentModel))
+          uploadedFiles.map(file => analyzeImage(file.url, input || "What do you see in this image?", currentModel))
         );
         const combinedAnalysis = analyses.join('\n\n---\n\n');
         const enhancedInput = `${input}\n\n[Vision AI Analysis]:\n${combinedAnalysis}`;
-        onSendMessage(enhancedInput, uploadedFiles.map(f => f.puterPath));
+        onSendMessage(enhancedInput, uploadedFiles.map(f => f.storagePath));
       } catch (error) {
-        onSendMessage(input, uploadedFiles.map(f => f.puterPath));
+        onSendMessage(input, uploadedFiles.map(f => f.storagePath));
       }
     } else {
-      onSendMessage(input, uploadedFiles.map(f => f.puterPath));
+      onSendMessage(input, uploadedFiles.map(f => f.storagePath));
     }
     
     // clear UI state
@@ -463,7 +463,7 @@ const ChatArea = ({
                     variant="destructive"
                     size="icon"
                     className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100"
-                    onClick={() => removeFile(file.puterPath)}
+                    onClick={() => removeFile(file.storagePath)}
                   >
                     ×
                   </Button>
