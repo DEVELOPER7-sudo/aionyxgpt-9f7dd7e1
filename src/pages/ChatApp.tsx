@@ -104,7 +104,7 @@ What would you like to work on today?`,
     setMobileMenuOpen(false);
   };
 
-  const handleSendMessage = async (content: string, attachments?: string[]) => {
+  const handleSendMessage = async (content: string) => {
     if (!currentChatId) return;
 
     const isImageCommand = content.trim().startsWith('/img');
@@ -113,7 +113,6 @@ What would you like to work on today?`,
       role: 'user',
       content,
       timestamp: Date.now(),
-      attachments,
     };
 
     const updatedChat = { ...currentChat! };
@@ -127,7 +126,7 @@ What would you like to work on today?`,
       if (isImageCommand) {
         await handleImageGeneration(content.replace('/img', '').trim(), currentChatId);
       } else {
-        await handleTextChat(updatedChat.messages, currentChatId, attachments);
+        await handleTextChat(updatedChat.messages, currentChatId);
       }
     } catch (error: any) {
       // Only log detailed errors in development
@@ -157,7 +156,7 @@ What would you like to work on today?`,
     }
   };
 
-  const handleTextChat = async (messages: Message[], chatId: string, attachments?: string[]) => {
+  const handleTextChat = async (messages: Message[], chatId: string) => {
     // @ts-ignore - Puter is loaded via script tag (HTML style)
     const puter = (window as any)?.puter;
     if (!puter?.ai?.chat) {
@@ -170,7 +169,7 @@ What would you like to work on today?`,
     const lastUser = [...messages].reverse().find((m) => m.role === 'user');
     const userText = lastUser?.content ?? '';
     
-    if (!userText.trim() && (!attachments || attachments.length === 0)) return;
+    if (!userText.trim()) return;
     
     // Validate message length
     if (userText.length > 10000) {
@@ -178,136 +177,9 @@ What would you like to work on today?`,
       setIsLoading(false);
       return;
     }
-    
-    // Validate and convert attachments to valid URLs
-    if (attachments && attachments.length > 0) {
-      if (attachments.length > 10) {
-        toast.error('Too many attachments (max 10)');
-        setIsLoading(false);
-        return;
-      }
-      
-      // Convert storage paths or expired signed URLs to fresh signed URLs
-      const validAttachments: string[] = [];
-      for (const attachment of attachments) {
-        // Check if it's already a valid full URL (not expired)
-        if (attachment.startsWith('http') && attachment.includes('supabase.co/storage')) {
-          validAttachments.push(attachment);
-        } else {
-          // It's a storage path, generate fresh signed URL
-          try {
-            const { data: signedUrlData, error } = await supabase.storage
-              .from('chat-files')
-              .createSignedUrl(attachment, 3600); // 1 hour expiry
-            
-            if (error || !signedUrlData) {
-              if (import.meta.env.DEV) {
-                console.error('Failed to generate signed URL for:', attachment, error);
-              }
-              toast.error('Failed to load attached file');
-              setIsLoading(false);
-              return;
-            }
-            validAttachments.push(signedUrlData.signedUrl);
-          } catch (err) {
-            if (import.meta.env.DEV) {
-              console.error('Error generating signed URL:', err);
-            }
-            toast.error('Failed to load attached file');
-            setIsLoading(false);
-            return;
-          }
-        }
-      }
-      attachments = validAttachments;
-    }
 
-    // Use selected model (do not force a single default)
+    // Use selected model
     const modelId = settings.textModel;
-
-    // If we have attachments, call vision: puter.ai.chat(prompt, imageUrl, { model })
-    if (attachments && attachments.length > 0) {
-      try {
-        // Only log in development
-        if (import.meta.env.DEV && settings.enableDebugLogs) {
-          console.log('[DEBUG] Vision chat using URL:', attachments[0], 'model:', modelId);
-        }
-
-        const logger = createPuterAPILogger();
-        
-        const assistantMessage: Message = {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: '',
-          timestamp: Date.now(),
-        };
-
-        // Create the initial messages array with the new assistant message
-        const updatedMessages = [...messages, assistantMessage];
-        storage.updateChat(chatId, { messages: updatedMessages });
-        setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: updatedMessages } : c)));
-
-        // CORRECT API FORMAT: puter.ai.chat(prompt, imageUrl, { model })
-        const imageUrl = attachments[0];
-        const prompt = userText || 'What do you see?';
-        
-        if (import.meta.env.DEV && settings.enableDebugLogs) {
-          console.log('[DEBUG] Calling puter.ai.chat with:', { prompt, imageUrl, model: modelId });
-        }
-        
-        const res = await puter.ai.chat(prompt, imageUrl, { model: modelId });
-
-        let full = '';
-        const hasAsyncIter = (res as any)?.[Symbol.asyncIterator]?.bind(res);
-        if (hasAsyncIter) {
-          for await (const part of res as any) {
-            const text = part?.text ?? part?.delta ?? part?.message?.content ?? '';
-            if (typeof text === 'string') {
-              full += text;
-              // Update the last message (assistant) with accumulated content
-              const currentMessages = [...messages, { ...assistantMessage, content: full }];
-              storage.updateChat(chatId, { messages: currentMessages });
-              setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: currentMessages } : c)));
-            }
-          }
-        } else {
-          if (typeof res === 'string') full = res;
-          else if (Array.isArray(res)) full = res.map((p: any) => p?.text || '').join('');
-          else if (res && typeof res === 'object' && typeof (res as any).text === 'string') full = (res as any).text;
-          
-          const finalMessages = [...messages, { ...assistantMessage, content: (full || '').trim() }];
-          storage.updateChat(chatId, { messages: finalMessages });
-          setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: finalMessages } : c)));
-        }
-
-        logger.logSuccess('puter.ai.chat (vision)', { prompt, imageUrl, model: modelId }, full);
-
-        // Auto-generate title for first turn
-        if (messages.length === 1) {
-          const title = messages[0].content.slice(0, 50) + (messages[0].content.length > 50 ? '...' : '');
-          storage.updateChat(chatId, { title });
-          setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, title } : c)));
-        }
-      } catch (err) {
-        const logger = createPuterAPILogger();
-        logger.logError('puter.ai.chat (vision)', { prompt: userText, imageUrl: attachments?.[0], model: modelId }, err);
-        
-        // Only log detailed errors in development
-        if (import.meta.env.DEV) {
-          console.error('Vision chat error:', err);
-        }
-        const errorMessage: Message = {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: 'Failed to get response from AI. Please try again.',
-          timestamp: Date.now(),
-        };
-        const errorMessages = [...messages, errorMessage];
-        storage.updateChat(chatId, { messages: errorMessages });
-        setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages: errorMessages } : c)));
-      }
-      return; // Important: do not run the regular text-only flow
-    }
 
     // Regular text-only flow with system prompt
     const systemPrompt = `You are a helpful AI assistant. ${webSearchEnabled ? 'You may use web knowledge if your model supports it.' : ''} ${deepSearchEnabled ? 'Prefer deeper step-by-step reasoning when needed.' : ''}`.trim();

@@ -8,12 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-import { useFileUpload } from '@/hooks/useFileUpload';
 import LoadingDots from '@/components/LoadingDots';
 import {
   Send,
   Mic,
-  Paperclip,
   Image as ImageIcon,
   Copy,
   ThumbsUp,
@@ -27,7 +25,6 @@ import {
   Search as SearchIcon,
   Square,
   X,
-  FileText,
 } from 'lucide-react';
 import { Chat, Message } from '@/types/chat';
 import { cn } from '@/lib/utils';
@@ -35,7 +32,7 @@ import { toast } from 'sonner';
 
 interface ChatAreaProps {
   chat: Chat | null;
-  onSendMessage: (content: string, attachments?: string[]) => void;
+  onSendMessage: (content: string) => void;
   onUpdateTitle: (chatId: string, title: string) => void;
   onDeleteChat: (chatId: string) => void;
   onRegenerateMessage: (messageId: string) => void;
@@ -74,11 +71,7 @@ const ChatArea = ({
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingMessageContent, setEditingMessageContent] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showFileUrls, setShowFileUrls] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const { uploadFile, isUploading, uploadedFiles, clearFiles, removeFile } = useFileUpload();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -101,51 +94,17 @@ const ChatArea = ({
   }, [chat?.id, input]);
 
   const handleSend = async () => {
-    // Require a prompt for vision requests; don't auto-send on upload
-    if (!input.trim()) {
-      if (uploadedFiles.length > 0) {
-        toast.error('Please enter a prompt to analyze the image');
-        return;
-      }
-      return;
-    }
+    if (!input.trim()) return;
     if (isLoading) return;
 
-    // Pass storage paths instead of signed URLs (will be regenerated when needed)
-    onSendMessage(input, uploadedFiles.map(f => f.storagePath));
-
-    // clear UI state
+    onSendMessage(input);
     setInput('');
-    clearFiles();
-    setShowFileUrls(false);
     if (chat) localStorage.removeItem(`draft_${chat.id}`);
   };
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    toast.info(`Uploading ${files.length} file(s)...`);
-
-    try {
-      for (const file of Array.from(files)) {
-        await uploadFile(file);
-      }
-      toast.success('Files ready for vision analysis. Add a prompt and press Send.');
-    } catch (err) {
-      console.error('File upload error:', err);
-      toast.error('File upload failed');
-    } finally {
-      // Reset file input but keep previews so the user can send them with a prompt
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
   const copyToClipboard = (text: string) => {
@@ -396,86 +355,8 @@ const ChatArea = ({
       {/* Input Area */}
       <div className="border-t border-border p-2 md:p-4 bg-card/50 backdrop-blur-sm flex-shrink-0 z-10 safe-bottom">
         <div className="max-w-4xl mx-auto space-y-2 md:space-y-3">
-          {/* Attachments with Preview and URL */}
-          {uploadedFiles.length > 0 && (
-            <div className="space-y-2 animate-scale-in">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
-                  {uploadedFiles.length} file(s) attached • Analyzing on upload
-                </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowFileUrls(!showFileUrls)}
-                  className="h-6 text-xs"
-                >
-                  {showFileUrls ? 'Hide URLs' : 'Show URLs'}
-                </Button>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {uploadedFiles.map((file, i) => (
-                  <div key={i} className="relative group">
-                    {file.type.startsWith('image/') ? (
-                      <img 
-                        src={file.url} 
-                        alt={file.name} 
-                        className="w-20 h-20 rounded-lg object-cover border border-border shadow-sm"
-                      />
-                    ) : (
-                      <div className="w-20 h-20 rounded-lg bg-secondary border border-border flex items-center justify-center">
-                        <FileText className="w-8 h-8 text-muted-foreground" />
-                      </div>
-                    )}
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeFile(file.storagePath)}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                    <p className="text-xs mt-1 truncate w-20" title={file.name}>{file.name}</p>
-                    {showFileUrls && (
-                      <div className="absolute bottom-full mb-2 left-0 right-0 bg-popover text-popover-foreground border border-border rounded p-2 shadow-lg text-xs break-all z-20 w-64">
-                        <p className="font-semibold mb-1">URL:</p>
-                        <p className="font-mono text-xs">{file.url}</p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="mt-1 h-6 w-full"
-                          onClick={() => {
-                            navigator.clipboard.writeText(file.url);
-                            toast.success('URL copied');
-                          }}
-                        >
-                          Copy URL
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Input */}
           <div className="flex gap-1 md:gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,.txt,.json,.xml,.pdf,.doc,.docx"
-              multiple
-              className="hidden"
-              onChange={handleFileUpload}
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 flex-shrink-0"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Paperclip className="w-4 h-4 md:w-5 md:h-5" />
-            </Button>
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -517,13 +398,6 @@ const ChatArea = ({
               Advanced
               {showAdvanced ? <X className="w-3 h-3" /> : null}
             </Button>
-            
-            {isUploading && (
-              <span className="text-xs text-muted-foreground flex items-center gap-2">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Uploading files...
-              </span>
-            )}
           </div>
 
           {/* Advanced Options Panel */}
@@ -571,10 +445,6 @@ const ChatArea = ({
                   />
                 </div>
               </div>
-              
-              <p className="text-xs text-muted-foreground pt-2 border-t border-border">
-                💡 Vision AI auto-analyzes all uploaded files
-              </p>
             </div>
           )}
         </div>
