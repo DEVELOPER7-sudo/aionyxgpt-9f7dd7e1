@@ -101,7 +101,14 @@ const ChatArea = ({
   }, [chat?.id, input]);
 
   const handleSend = async () => {
-    if (!input.trim() && uploadedFiles.length === 0) return;
+    // Require a prompt for vision requests; don't auto-send on upload
+    if (!input.trim()) {
+      if (uploadedFiles.length > 0) {
+        toast.error('Please enter a prompt to analyze the image');
+        return;
+      }
+      return;
+    }
     if (isLoading) return;
 
     // Pass storage paths instead of signed URLs (will be regenerated when needed)
@@ -113,7 +120,6 @@ const ChatArea = ({
     setShowFileUrls(false);
     if (chat) localStorage.removeItem(`draft_${chat.id}`);
   };
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -129,21 +135,14 @@ const ChatArea = ({
 
     try {
       for (const file of Array.from(files)) {
-        const uploaded = await uploadFile(file);
-        if (uploaded) {
-          // Immediately trigger Vision AI via chat using the custom prompt and selected model in parent
-          onSendMessage(input || 'What do you see?', [uploaded.storagePath]);
-          // Clear prompt after sending to avoid showing it in the input box
-          setInput('');
-        }
+        await uploadFile(file);
       }
-      // Clear local previews since we dispatched the request
-      clearFiles();
+      toast.success('Files ready for vision analysis. Add a prompt and press Send.');
     } catch (err) {
       console.error('File upload error:', err);
       toast.error('File upload failed');
     } finally {
-      // Reset file input
+      // Reset file input but keep previews so the user can send them with a prompt
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
