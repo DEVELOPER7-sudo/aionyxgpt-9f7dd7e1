@@ -18,20 +18,6 @@ export const useVisionAI = () => {
 
     setIsAnalyzing(true);
 
-    // Avoid long hangs and suppress user-facing errors
-    const withTimeout = <T,>(p: Promise<T>, ms = 25000) =>
-      new Promise<T>((resolve) => {
-        const t = setTimeout(() => resolve('' as unknown as T), ms);
-        p
-          .then((v) => {
-            clearTimeout(t);
-            resolve(v);
-          })
-          .catch(() => {
-            clearTimeout(t);
-            resolve('' as unknown as T);
-          });
-      });
 
     const logger = createPuterAPILogger();
     
@@ -70,7 +56,7 @@ export const useVisionAI = () => {
         return '';
       })();
 
-      return await withTimeout(chatPromise);
+      return await chatPromise;
     } catch (error) {
       logger.logError('puter.ai.chat (vision)', { prompt, imageUrl, model }, error);
       throw error;
