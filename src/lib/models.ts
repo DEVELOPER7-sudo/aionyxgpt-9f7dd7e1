@@ -6,20 +6,20 @@ export const TEXT_MODELS = [
   { id: 'openrouter:cognitivecomputations/dolphin-mistral-24b-venice-edition:free', name: 'Dolphin Mistral 24B Venice 🐬 (Uncensored)', provider: 'OpenRouter' },
   
   // Featured Models (Puter JS endpoint)
-  { id: 'gpt-5', name: 'GPT-5', provider: 'OpenAI' },
-  { id: 'claude-sonnet-4.5', name: 'Claude Sonnet 4.5', provider: 'Anthropic' },
-  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google' },
-  { id: 'deepseek-r1', name: 'DeepSeek R1', provider: 'DeepSeek' },
-  { id: 'grok-3', name: 'Grok 3', provider: 'xAI' },
-  { id: 'llama-4-maverick', name: 'Llama 4 Maverick', provider: 'Meta' },
-  { id: 'qwen3-max', name: 'Qwen 3 Max', provider: 'Qwen' },
-  { id: 'sonar-pro', name: 'Sonar Pro', provider: 'Perplexity' },
+  { id: 'openai/gpt-5', name: 'GPT-5', provider: 'OpenAI' },
+  { id: 'anthropic/claude-sonnet-4.5', name: 'Claude Sonnet 4.5', provider: 'Anthropic' },
+  { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google' },
+  { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'DeepSeek' },
+  { id: 'xai/grok-3', name: 'Grok 3', provider: 'xAI' },
+  { id: 'meta/llama-4-maverick', name: 'Llama 4 Maverick', provider: 'Meta' },
+  { id: 'qwen/qwen3-max', name: 'Qwen 3 Max', provider: 'Qwen' },
+  { id: 'perplexity/sonar-pro', name: 'Sonar Pro', provider: 'Perplexity' },
   
   // Fast & Efficient (Puter JS endpoint)
-  { id: 'gpt-5-mini', name: 'GPT-5 Mini', provider: 'OpenAI' },
-  { id: 'gpt-5-nano', name: 'GPT-5 Nano', provider: 'OpenAI' },
-  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google' },
-  { id: 'claude-3.5-haiku', name: 'Claude 3.5 Haiku', provider: 'Anthropic' },
+  { id: 'openai/gpt-5-mini', name: 'GPT-5 Mini', provider: 'OpenAI' },
+  { id: 'openai/gpt-5-nano', name: 'GPT-5 Nano', provider: 'OpenAI' },
+  { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google' },
+  { id: 'anthropic/claude-3.5-haiku', name: 'Claude 3.5 Haiku', provider: 'Anthropic' },
 ];
 
 /**

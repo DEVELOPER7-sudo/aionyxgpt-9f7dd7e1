@@ -34,7 +34,7 @@ import { cn } from '@/lib/utils';
 
 interface ChatAreaProps {
   chat: Chat | null;
-  onSendMessage: (content: string) => void;
+  onSendMessage: (content: string, imageData?: { imageUrl: string; prompt: string }) => void;
   onUpdateTitle: (chatId: string, title: string) => void;
   onDeleteChat: (chatId: string) => Promise<void>;
   onRegenerateMessage: (messageId: string) => void;
@@ -74,19 +74,19 @@ const ChatArea = ({
   const [editingMessageContent, setEditingMessageContent] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [expandedThinking, setExpandedThinking] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { analyzeImage, isAnalyzing } = useVisionAI();
 
-  // Format assistant content: extract <think>...</think> blocks into a Markdown "Thinking" section
-  const processThinking = (content: string) => {
-    const thinkRegex = /<think>[\s\S]*?<\/think>/i;
+  // Extract thinking and main content separately
+  const processThinking = (content: string): { thinking: string | null; main: string } => {
+    const thinkRegex = /<think>([\s\S]*?)<\/think>/i;
     const match = content.match(thinkRegex);
-    if (!match) return content;
-    const thinkText = match[0].replace(/<\/?think>/gi, '').trim();
-    const rest = content.replace(thinkRegex, '').trim();
-    const thinkingSection = `### Thinking\n\n\`\`\`text\n${thinkText}\n\`\`\`\n`;
-    return `${thinkingSection}\n${rest}`.trim();
+    if (!match) return { thinking: null, main: content };
+    const thinking = match[1].trim();
+    const main = content.replace(thinkRegex, '').trim();
+    return { thinking, main };
   };
 
   useEffect(() => {
@@ -130,22 +130,13 @@ const ChatArea = ({
     if (!input.trim() && !uploadedImage) return;
     if (isLoading || isAnalyzing) return;
 
-    // If image is uploaded, analyze it
+    // If image is uploaded, pass it to parent with message
     if (uploadedImage) {
       const prompt = input.trim() || 'What do you see in this image?';
-      // Add user message with image
-      const userMessage = `${prompt}\n\n[Image uploaded]`;
-      onSendMessage(userMessage);
+      onSendMessage(prompt, { imageUrl: uploadedImage, prompt });
       setInput('');
-      // Clear preview immediately after sending
       setUploadedImage(null);
       if (chat) localStorage.removeItem(`draft_${chat.id}`);
-
-      // Analyze image (Puter defaults respected)
-      const analysis = await analyzeImage(uploadedImage, prompt);
-      if (analysis) {
-        onSendMessage(`Image Analysis: ${analysis}`);
-      }
     } else {
       onSendMessage(input);
       setInput('');
@@ -300,11 +291,48 @@ const ChatArea = ({
                   </div>
                 )}
                 {message.role === 'assistant' ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none min-w-0 overflow-hidden">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {processThinking(message.content)}
-                    </ReactMarkdown>
-                  </div>
+                  (() => {
+                    const { thinking, main } = processThinking(message.content);
+                    const isExpanded = expandedThinking.has(message.id);
+                    
+                    return (
+                      <>
+                        {thinking && (
+                          <div className="mb-3 border border-border rounded-lg overflow-hidden">
+                            <button
+                              onClick={() => {
+                                const newExpanded = new Set(expandedThinking);
+                                if (isExpanded) {
+                                  newExpanded.delete(message.id);
+                                } else {
+                                  newExpanded.add(message.id);
+                                }
+                                setExpandedThinking(newExpanded);
+                              }}
+                              className="w-full px-3 py-2 bg-muted/50 hover:bg-muted flex items-center justify-between text-sm font-medium"
+                            >
+                              <span>💭 Thinking</span>
+                              <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
+                            </button>
+                            {isExpanded && (
+                              <div className="p-3 text-xs text-muted-foreground max-h-[300px] overflow-y-auto">
+                                <div className="prose prose-sm dark:prose-invert max-w-none">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {thinking}
+                                  </ReactMarkdown>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="prose prose-sm dark:prose-invert max-w-none min-w-0 overflow-hidden">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {main}
+                          </ReactMarkdown>
+                        </div>
+                      </>
+                    );
+                  })()
                 ) : editingMessageId === message.id ? (
                   <div className="space-y-2 animate-scale-in">
                     <Textarea

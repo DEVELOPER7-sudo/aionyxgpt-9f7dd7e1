@@ -101,14 +101,16 @@ How can I help you today?`,
     setMobileMenuOpen(false);
   };
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, imageData?: { imageUrl: string; prompt: string }) => {
     if (!currentChatId) return;
 
     const isImageCommand = content.trim().startsWith('/img');
+    const isVisionRequest = !!imageData;
+    
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content,
+      content: isVisionRequest ? `${content}\n\n[Image uploaded]` : content,
       timestamp: Date.now(),
     };
 
@@ -122,6 +124,8 @@ How can I help you today?`,
     try {
       if (isImageCommand) {
         await handleImageGeneration(content.replace('/img', '').trim(), currentChatId);
+      } else if (isVisionRequest) {
+        await handleVisionChat(imageData.imageUrl, imageData.prompt, updatedChat.messages, currentChatId);
       } else {
         await handleTextChat(updatedChat.messages, currentChatId);
       }
@@ -381,6 +385,79 @@ How can I help you today?`,
     }
 
     // Auto-generate title for first message using Puter JS with gpt-5-nano
+    if (messages.length === 1) {
+      try {
+        // @ts-ignore
+        const puter = (window as any)?.puter;
+        if (puter?.ai?.chat) {
+          const systemPrompt = 'You generate concise, human-friendly chat titles (max 6 words). No punctuation like quotes. No emojis.';
+          const userPrompt = `Create a short title for this chat based on the user's first message: \n\n${messages[0].content}`;
+          const titleResponse = await puter.ai.chat(`${systemPrompt}\n\n${userPrompt}`, { model: 'gpt-5-nano' });
+          const title = (typeof titleResponse === 'string' ? titleResponse : String(titleResponse)).trim().slice(0, 60) || messages[0].content.slice(0, 50);
+          storage.updateChat(chatId, { title });
+          setChats((prev) => prev.map(c => c.id === chatId ? { ...c, title } : c));
+        } else {
+          const fallback = messages[0].content.slice(0, 50) + (messages[0].content.length > 50 ? '...' : '');
+          storage.updateChat(chatId, { title: fallback });
+          setChats((prev) => prev.map(c => c.id === chatId ? { ...c, title: fallback } : c));
+        }
+      } catch (e) {
+        const fallback = messages[0].content.slice(0, 50) + (messages[0].content.length > 50 ? '...' : '');
+        storage.updateChat(chatId, { title: fallback });
+        setChats((prev) => prev.map(c => c.id === chatId ? { ...c, title: fallback } : c));
+      }
+    }
+  };
+
+  const handleVisionChat = async (imageUrl: string, prompt: string, messages: Message[], chatId: string) => {
+    // @ts-ignore - Puter is loaded via script tag
+    const puter = (window as any)?.puter;
+    if (!puter?.ai?.chat) {
+      toast.error('AI service not available');
+      setIsLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setAbortController(controller);
+
+    try {
+      const response = await puter.ai.chat(prompt, imageUrl, {
+        model: 'gpt-5-nano',
+        stream: true,
+      });
+
+      let fullResponse = '';
+      const assistantMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '',
+        timestamp: Date.now(),
+      };
+
+      const chat = chats.find(c => c.id === chatId);
+      if (!chat) return;
+
+      try {
+        for await (const part of response) {
+          if (controller.signal.aborted) {
+            break;
+          }
+          
+          fullResponse += part?.text || '';
+          const currentMessages = [...messages, { ...assistantMessage, content: fullResponse }];
+          storage.updateChat(chatId, { messages: currentMessages });
+          setChats(prevChats => prevChats.map(c => c.id === chatId ? { ...c, messages: currentMessages } : c));
+        }
+      } finally {
+        setAbortController(null);
+      }
+    } catch (error) {
+      console.error('Vision error:', error);
+      throw error;
+    }
+
+    // Auto-generate title for first message
     if (messages.length === 1) {
       try {
         // @ts-ignore
