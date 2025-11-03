@@ -10,6 +10,7 @@ export const useChatSync = (
 ) => {
   const lastSyncRef = useRef<number>(0);
   const syncTimeoutRef = useRef<NodeJS.Timeout>();
+  const prevChatsRef = useRef<Chat[]>([]);
 
   // Load chats from cloud when user logs in
   useEffect(() => {
@@ -52,6 +53,39 @@ export const useChatSync = (
 
     loadCloudChats();
   }, [userId]);
+
+  // Detect deletions and propagate to cloud immediately
+  useEffect(() => {
+    if (!userId) {
+      prevChatsRef.current = chats;
+      return;
+    }
+
+    const prevIds = new Set(prevChatsRef.current.map((c) => c.id));
+    const currIds = new Set(chats.map((c) => c.id));
+    const removedIds = Array.from(prevIds).filter((id) => !currIds.has(id));
+
+    if (removedIds.length > 0) {
+      (async () => {
+        try {
+          for (const id of removedIds) {
+            const { error } = await supabase
+              .from('chats')
+              .delete()
+              .eq('user_id', userId)
+              .eq('id', id);
+            if (error) throw error;
+          }
+        } catch (err) {
+          if (import.meta.env.DEV) console.error('Error propagating deletions:', err);
+          // Soft notify, don't block UI
+          toast.error('Failed to delete chat from cloud');
+        }
+      })();
+    }
+
+    prevChatsRef.current = chats;
+  }, [chats, userId]);
 
   // Sync chats to cloud with debouncing
   useEffect(() => {
