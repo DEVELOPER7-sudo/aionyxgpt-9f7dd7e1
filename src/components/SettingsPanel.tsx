@@ -468,14 +468,14 @@ const SettingsPanel = ({
           )}
           
           {/* Custom Models List */}
-          {customModels.filter(id => modelSource === 'puter' ? !id.startsWith('openrouter:') || id.includes(':free') : id.startsWith('openrouter:') && !id.includes(':free')).length > 0 && (
+          {customModels.filter(id => modelSource === 'puter' ? !id.startsWith('openrouter:') : id.startsWith('openrouter:')).length > 0 && (
             <div className="space-y-2">
               <Label className="text-sm font-medium">
-                Your Custom {modelSource === 'puter' ? 'Puter' : 'OpenRouter'} Models ({customModels.filter(id => modelSource === 'puter' ? !id.startsWith('openrouter:') || id.includes(':free') : id.startsWith('openrouter:') && !id.includes(':free')).length}):
+                Your Custom {modelSource === 'puter' ? 'Puter' : 'OpenRouter'} Models ({customModels.filter(id => modelSource === 'puter' ? !id.startsWith('openrouter:') : id.startsWith('openrouter:')).length}):
               </Label>
               <div className="grid gap-2 max-h-[200px] overflow-y-auto">
                 {customModels
-                  .filter(id => modelSource === 'puter' ? !id.startsWith('openrouter:') || id.includes(':free') : id.startsWith('openrouter:') && !id.includes(':free'))
+                  .filter(id => modelSource === 'puter' ? !id.startsWith('openrouter:') : id.startsWith('openrouter:'))
                   .map((modelId) => (
                     <div
                       key={modelId}

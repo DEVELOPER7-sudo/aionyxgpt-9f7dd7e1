@@ -29,7 +29,7 @@ export const PUTER_MODELS = [
  * Get all Puter models including ALL OpenRouter models (for Puter) and custom Puter models
  */
 export function getAllPuterModels() {
-  const customPuterModels = getCustomModels().filter(id => !id.startsWith('openrouter:') || id.includes(':free'));
+  const customPuterModels = getCustomModels().filter(id => !id.startsWith('openrouter:'));
   const customModelObjects = customPuterModels.map(id => ({
     id,
     name: beautifyModelName(id),
@@ -61,7 +61,7 @@ export function getAllPuterModels() {
  * Get all OpenRouter models including custom OpenRouter models
  */
 export function getAllOpenRouterModels() {
-  const customOpenRouterModels = getCustomModels().filter(id => id.startsWith('openrouter:') && !id.includes(':free'));
+  const customOpenRouterModels = getCustomModels().filter(id => id.startsWith('openrouter:'));
   const customModelObjects = customOpenRouterModels.map(id => ({
     id,
     name: beautifyModelName(id),
