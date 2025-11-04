@@ -1,11 +1,14 @@
 import { beautifyModelName, getProviderFromModelId, getCustomModels } from './model-utils';
 import { ALL_OPENROUTER_MODELS } from './all-models';
 
-export const TEXT_MODELS = [
-  // Venice Uncensored Model (OpenRouter endpoint)
-  { id: 'openrouter:cognitivecomputations/dolphin-mistral-24b-venice-edition:free', name: 'Dolphin Mistral 24B Venice 🐬 (Uncensored)', provider: 'OpenRouter' },
-  
-  // Featured Models (Puter JS endpoint with OpenRouter prefix)
+// OpenRouter models (Venice + custom free models)
+export const OPENROUTER_MODELS = [
+  { id: 'openrouter:cognitivecomputations/dolphin-mistral-24b-venice-edition:free', name: 'Dolphin Mistral 24B Venice 🐬 (Uncensored)', provider: 'OpenRouter', isFree: true },
+];
+
+// Puter models (default)
+export const PUTER_MODELS = [
+  // Featured Models
   { id: 'openrouter:openai/gpt-5', name: 'GPT-5', provider: 'OpenAI' },
   { id: 'openrouter:anthropic/claude-sonnet-4.5', name: 'Claude Sonnet 4.5', provider: 'Anthropic' },
   { id: 'openrouter:google/gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google' },
@@ -15,7 +18,7 @@ export const TEXT_MODELS = [
   { id: 'openrouter:qwen/qwen3-max', name: 'Qwen 3 Max', provider: 'Qwen' },
   { id: 'openrouter:perplexity/sonar-pro', name: 'Sonar Pro', provider: 'Perplexity' },
   
-  // Fast & Efficient (Puter JS endpoint with OpenRouter prefix)
+  // Fast & Efficient
   { id: 'openrouter:openai/gpt-5-mini', name: 'GPT-5 Mini', provider: 'OpenAI' },
   { id: 'openrouter:openai/gpt-5-nano', name: 'GPT-5 Nano', provider: 'OpenAI' },
   { id: 'openrouter:google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google' },
@@ -23,28 +26,27 @@ export const TEXT_MODELS = [
 ];
 
 /**
- * Get all text models including ALL OpenRouter models and custom ones
+ * Get all Puter models including ALL OpenRouter models (for Puter) and custom Puter models
  */
-export function getAllTextModels() {
-  const customModels = getCustomModels();
-  const customModelObjects = customModels.map(id => ({
+export function getAllPuterModels() {
+  const customPuterModels = getCustomModels().filter(id => !id.startsWith('openrouter:') || id.includes(':free'));
+  const customModelObjects = customPuterModels.map(id => ({
     id,
     name: beautifyModelName(id),
     provider: getProviderFromModelId(id),
     isCustom: true,
   }));
   
-  // Create model objects from ALL_OPENROUTER_MODELS
+  // Create model objects from ALL_OPENROUTER_MODELS (Puter uses these too)
   const allOpenRouterModelObjects = ALL_OPENROUTER_MODELS.map(id => ({
     id,
     name: beautifyModelName(id),
     provider: getProviderFromModelId(id),
   }));
   
-  // Combine: Featured models first, then all OpenRouter models, then custom
-  // Remove duplicates by tracking seen IDs
+  // Combine: Featured Puter models first, then all OpenRouter models, then custom
   const seenIds = new Set<string>();
-  const allModels = [...TEXT_MODELS, ...allOpenRouterModelObjects, ...customModelObjects];
+  const allModels = [...PUTER_MODELS, ...allOpenRouterModelObjects, ...customModelObjects];
   
   return allModels.filter(model => {
     if (seenIds.has(model.id)) {
@@ -53,6 +55,21 @@ export function getAllTextModels() {
     seenIds.add(model.id);
     return true;
   });
+}
+
+/**
+ * Get all OpenRouter models including custom OpenRouter models
+ */
+export function getAllOpenRouterModels() {
+  const customOpenRouterModels = getCustomModels().filter(id => id.startsWith('openrouter:') && !id.includes(':free'));
+  const customModelObjects = customOpenRouterModels.map(id => ({
+    id,
+    name: beautifyModelName(id),
+    provider: getProviderFromModelId(id),
+    isCustom: true,
+  }));
+  
+  return [...OPENROUTER_MODELS, ...customModelObjects];
 }
 
 export const IMAGE_MODELS = [
