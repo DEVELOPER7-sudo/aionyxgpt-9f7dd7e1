@@ -1,9 +1,17 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const RequestBodySchema = z.object({
+  messages: z.array(z.object({_id: z.string().optional(), role: z.enum(['user', 'assistant', 'system']), content: z.string()})),
+  model: z.string(),
+  temperature: z.number().optional(),
+  max_tokens: z.number().optional(),
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,10 +19,22 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, model, temperature, max_tokens, customApiKey } = await req.json();
+    const body = await req.json();
+    const validationResult = RequestBodySchema.safeParse(body);
+
+    if (!validationResult.success) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request body', issues: validationResult.error.issues }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const { messages, model, temperature, max_tokens } = validationResult.data;
     
-    // Use custom API key if provided, otherwise use default
-    const OPENROUTER_API_KEY = customApiKey || Deno.env.get('OPENROUTER_API_KEY');
+    const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
 
     if (!OPENROUTER_API_KEY) {
       throw new Error('OpenRouter API key not configured');
@@ -23,7 +43,6 @@ serve(async (req) => {
     console.log('OpenRouter request:', { 
       model, 
       messageCount: messages.length,
-      usingCustomKey: !!customApiKey 
     });
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -47,7 +66,6 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error('OpenRouter error:', response.status, errorText);
       
-      // Return specific error messages for rate limits and credits
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: 'Rate limit exceeded. Please wait before trying again.' }),
@@ -71,7 +89,6 @@ serve(async (req) => {
       throw new Error(`OpenRouter API error: ${response.status}`);
     }
 
-    // Return the streaming response
     return new Response(response.body, {
       headers: {
         ...corsHeaders,

@@ -1,4 +1,6 @@
 import { Chat, ImageGeneration, Memory, AppSettings } from '@/types/chat';
+import { Trigger } from '@/lib/triggers';
+import { CustomBot } from '@/types/bots';
 
 const STORAGE_KEYS = {
   CHATS: 'ai_studio_chats',
@@ -6,9 +8,70 @@ const STORAGE_KEYS = {
   MEMORY: 'ai_studio_memory',
   SETTINGS: 'ai_studio_settings',
   CURRENT_CHAT: 'ai_studio_current_chat',
+  CUSTOM_TRIGGERS: 'ai_studio_custom_triggers',
+  CUSTOM_BOTS: 'ai_studio_custom_bots',
 };
 
 export const storage = {
+  // Triggers
+  getCustomTriggers: (): Trigger[] => {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.CUSTOM_TRIGGERS);
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      console.error('Error loading custom triggers:', error);
+      return [];
+    }
+  },
+
+  setCustomTriggers: (triggers: Trigger[]) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.CUSTOM_TRIGGERS, JSON.stringify(triggers));
+    } catch (error) {
+      console.error('Error saving custom triggers:', error);
+    }
+  },
+
+  addCustomTrigger: (trigger: Trigger) => {
+    const triggers = storage.getCustomTriggers();
+    triggers.push(trigger);
+    storage.setCustomTriggers(triggers);
+  },
+
+  updateCustomTrigger: (triggerName: string, updates: Partial<Trigger>) => {
+    const triggers = storage.getCustomTriggers();
+    const index = triggers.findIndex(t => t.trigger === triggerName);
+    if (index !== -1) {
+      triggers[index] = { ...triggers[index], ...updates };
+      storage.setCustomTriggers(triggers);
+    }
+  },
+
+  deleteCustomTrigger: (triggerName: string) => {
+    let triggers = storage.getCustomTriggers();
+    triggers = triggers.filter(t => t.trigger !== triggerName);
+    storage.setCustomTriggers(triggers);
+  },
+  
+  // Bots
+  getCustomBots: (): CustomBot[] => {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.CUSTOM_BOTS);
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      console.error('Error loading custom bots:', error);
+      return [];
+    }
+  },
+
+  saveCustomBots: (bots: CustomBot[]) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.CUSTOM_BOTS, JSON.stringify(bots));
+    } catch (error) {
+      console.error('Error saving custom bots:', error);
+    }
+  },
+
   // Chats
   getChats: (): Chat[] => {
     try {

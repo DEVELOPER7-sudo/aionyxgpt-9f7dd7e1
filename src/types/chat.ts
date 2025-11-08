@@ -5,11 +5,12 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
-  imageUrl?: string;
+  imageUrl?: string | string[];
   imagePrompt?: string;
   attachments?: string[];
   triggers?: Trigger[];
   metadata?: any; // Add this to store trigger metadata
+  rawContent?: string;
 }
 
 export interface Chat {
@@ -19,6 +20,7 @@ export interface Chat {
   createdAt: number;
   updatedAt: number;
   model: string;
+  isIncognito?: boolean;
 }
 
 export interface ImageGeneration {

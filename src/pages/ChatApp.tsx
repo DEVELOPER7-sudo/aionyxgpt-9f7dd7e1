@@ -146,7 +146,7 @@ const ChatApp = () => {
       if (modelId.startsWith('openrouter/')) {
         const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openrouter-chat`, {
           method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-          body: JSON.stringify({ messages: [{ role: 'system', content: systemPrompt }, ...messages.map(m => ({ role: m.role, content: m.content }))], model: modelId.replace('openrouter:',''), temperature: settings.temperature, max_tokens: settings.maxTokens, customApiKey: settings.customOpenRouterKey }),
+          body: JSON.stringify({ messages: [{ role: 'system', content: systemPrompt }, ...messages.map(m => ({ role: m.role, content: m.content }))], model: modelId.replace('openrouter:',''), temperature: settings.temperature, max_tokens: settings.maxTokens }),
         });
         if (!response.body) throw new Error('Empty response body');
         await responseHandler(response.body);

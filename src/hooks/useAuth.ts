@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -8,67 +8,58 @@ export const useAuth = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
+  const fetchSession = useCallback(async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      setSession(session);
+      setUser(session?.user ?? null);
+    } catch (error) { 
+      console.error("Error fetching session:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+  useEffect(() => {
+    fetchSession();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchSession]);
 
   const signUp = async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/chat`;
-    
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl
-      }
+        emailRedirectTo: `${window.location.origin}/chat`,
+      },
     });
-    
     if (error) {
       toast.error(error.message);
       return { error };
     }
-    
-    toast.success('Account created! You can now sign in.');
+    toast.success('Check your email for a verification link!');
     return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       toast.error(error.message);
       return { error };
     }
-    
     return { error: null };
   };
 
   const signOut = async () => {
-    // Clear guest flag and sign out from backend if signed in
-    localStorage.removeItem('guestMode');
     const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error(error.message);
-    }
+    if (error) toast.error(error.message);
   };
 
   return {
@@ -77,6 +68,6 @@ export const useAuth = () => {
     loading,
     signUp,
     signIn,
-    signOut
+    signOut,
   };
 };
