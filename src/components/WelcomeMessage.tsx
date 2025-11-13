@@ -7,7 +7,7 @@ const WelcomeMessage = () => {
         {/* Main greeting */}
         <div className="space-y-4 animate-bounce-in">
           <div className="inline-block p-4 bg-primary/10 rounded-full glow-blue animate-pulse-glow">
-            <img src="https://abundant-yellow-ehhvuzr6hk.edgeone.app/IMG_20251112_182040.png" alt="OnyxGPT logo" className="w-12 h-12 rounded-lg" />
+            <img src="https://res.cloudinary.com/dcwnn9c0u/image/upload/v1763027959/zk5ditmfngx9bwa2fn7g.png" alt="OnyxGPT logo" className="w-12 h-12 rounded-lg" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient">
             Welcome to OnyxGPT! 👋

@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { User, LogOut, Menu, Coins } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-const onyxLogo = 'https://abundant-yellow-ehhvuzr6hk.edgeone.app/IMG_20251112_182040.png';
+const onyxLogo = 'https://res.cloudinary.com/dcwnn9c0u/image/upload/v1763027959/zk5ditmfngx9bwa2fn7g.png';
 import {
   DropdownMenu,
   DropdownMenuContent,

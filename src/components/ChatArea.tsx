@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -390,7 +392,7 @@ const ChatArea = ({
                         )}
                         
                         {thinking && (
-                          <div className="mb-3 border border-border rounded-lg overflow-hidden">
+                          <Card className="my-4 p-4 border-2 border-indigo-500/30 bg-indigo-500/5 transition-all duration-200 hover:shadow-lg">
                             <button
                               onClick={() => {
                                 const newExpanded = new Set(expandedThinking);
@@ -401,24 +403,33 @@ const ChatArea = ({
                                 }
                                 setExpandedThinking(newExpanded);
                               }}
-                              className="w-full px-3 py-2 bg-muted/50 hover:bg-muted flex items-center justify-between text-sm font-medium"
+                              className="w-full flex items-center gap-2 pb-2 border-b border-indigo-500/20"
                             >
-                              <span>💭 Thinking{isThinking ? ' (streaming...)' : ''}</span>
+                              <span className="text-lg">💭</span>
+                              <Badge variant="outline" className="font-mono text-xs bg-indigo-500/10 text-indigo-500 border-indigo-500/20">
+                                &lt;think&gt;
+                              </Badge>
+                              <span className="text-xs text-muted-foreground ml-auto">
+                                {isThinking ? 'Streaming...' : 'Reasoning Process'}
+                              </span>
                               <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
                             </button>
                             {isExpanded && (
-                              <div className="p-3 text-xs text-muted-foreground max-h-[300px] overflow-y-auto">
-                                <div className="prose prose-sm dark:prose-invert max-w-none">
-                                  <ReactMarkdown 
-                                    remarkPlugins={[remarkGfm, remarkMath]}
-                                    rehypePlugins={[rehypeKatex]}
-                                  >
-                                    {thinking}
-                                  </ReactMarkdown>
+                              <div className="mt-3 prose prose-sm dark:prose-invert max-w-none">
+                                <ReactMarkdown 
+                                  remarkPlugins={[remarkGfm, remarkMath]}
+                                  rehypePlugins={[rehypeKatex]}
+                                >
+                                  {thinking}
+                                </ReactMarkdown>
+                                <div className="flex items-center gap-2 mt-3 pt-2 border-t border-indigo-500/20 opacity-60">
+                                  <Badge variant="outline" className="font-mono text-xs bg-indigo-500/10 text-indigo-500 border-indigo-500/20">
+                                    &lt;/think&gt;
+                                  </Badge>
                                 </div>
                               </div>
                             )}
-                          </div>
+                          </Card>
                         )}
                         
                         {/* Wrapped trigger tags */}
