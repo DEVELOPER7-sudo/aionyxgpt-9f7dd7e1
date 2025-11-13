@@ -408,12 +408,56 @@ const SettingsPanel = ({
           </div>
         </div>
 
-        {/* Debug Options */}
-        <div className="border-t border-border pt-6">
+        {/* Advanced Options */}
+        <div className="border-t border-border pt-6 space-y-4">
+          <div>
+            <Label className="text-base font-semibold">Advanced Options</Label>
+            <p className="text-xs text-muted-foreground mt-1">Configure advanced AI behavior and privacy settings</p>
+          </div>
+
+          {/* Streaming Toggle */}
+          <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
+            <div className="space-y-1">
+              <Label htmlFor="streaming" className="text-base font-medium cursor-pointer flex items-center gap-2">
+                ⚡ Enable Streaming Responses
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Stream AI responses in real-time as they're generated (recommended for faster feedback)
+              </p>
+            </div>
+            <Switch
+              id="streaming"
+              checked={localSettings.streamingEnabled !== false}
+              onCheckedChange={(checked) =>
+                setLocalSettings({ ...localSettings, streamingEnabled: checked })
+              }
+            />
+          </div>
+
+          {/* Incognito Mode */}
+          <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
+            <div className="space-y-1">
+              <Label htmlFor="incognito" className="text-base font-medium cursor-pointer flex items-center gap-2">
+                🔒 Incognito Mode
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Private mode - chats won't be saved to storage or synced to cloud
+              </p>
+            </div>
+            <Switch
+              id="incognito"
+              checked={localSettings.incognitoMode || false}
+              onCheckedChange={(checked) =>
+                setLocalSettings({ ...localSettings, incognitoMode: checked })
+              }
+            />
+          </div>
+
+          {/* Debug Logs */}
           <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
             <div className="space-y-1">
               <Label htmlFor="debug-logs" className="text-base font-medium cursor-pointer">
-                Enable Debug Logs
+                🐛 Enable Debug Logs
               </Label>
               <p className="text-xs text-muted-foreground">
                 Log detailed API requests, responses, and errors to browser console for troubleshooting
@@ -427,6 +471,65 @@ const SettingsPanel = ({
               }
             />
           </div>
+        </div>
+
+        {/* Color Customization */}
+        <div className="border-t border-border pt-6 space-y-4">
+          <div>
+            <Label className="text-base font-semibold">🎨 Color Customization</Label>
+            <p className="text-xs text-muted-foreground mt-1">Customize sidebar and background colors</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="sidebar-color">Sidebar Color</Label>
+              <Input
+                id="sidebar-color"
+                type="color"
+                value={`#${(localSettings.sidebarColor || '0 0% 10%').split(' ').map(v => 
+                  parseInt(v.replace('%', '')).toString(16).padStart(2, '0')
+                ).join('')}`}
+                onChange={(e) => {
+                  const hex = e.target.value;
+                  setLocalSettings({ ...localSettings, sidebarColor: hex });
+                }}
+                className="h-12 w-full"
+              />
+              <p className="text-xs text-muted-foreground">Click to choose a color</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="bg-color">Background Color</Label>
+              <Input
+                id="bg-color"
+                type="color"
+                value={`#${(localSettings.backgroundColor || '0 0% 0%').split(' ').map(v => 
+                  parseInt(v.replace('%', '')).toString(16).padStart(2, '0')
+                ).join('')}`}
+                onChange={(e) => {
+                  const hex = e.target.value;
+                  setLocalSettings({ ...localSettings, backgroundColor: hex });
+                }}
+                className="h-12 w-full"
+              />
+              <p className="text-xs text-muted-foreground">Click to choose a color</p>
+            </div>
+          </div>
+
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setLocalSettings({ 
+                ...localSettings, 
+                sidebarColor: '0 0% 10%',
+                backgroundColor: '0 0% 0%' 
+              });
+              toast.success('Colors reset to default');
+            }}
+            className="w-full"
+          >
+            Reset to Default Colors
+          </Button>
         </div>
 
         <div className="flex justify-end pt-4">
