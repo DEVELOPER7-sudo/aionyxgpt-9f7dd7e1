@@ -16,7 +16,7 @@ import MotionBackground from '@/components/MotionBackground';
 import { createPuterAPILogger, createOpenRouterAPILogger } from '@/lib/api-logger';
 import { supabase } from '@/integrations/supabase/client';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
-import { detectTriggersAndBuildPrompt } from '@/lib/triggers';
+import { detectTriggersAndBuildPrompt, parseTriggeredResponse } from '@/lib/triggers';
 
 // Lazy load heavy components
 const SettingsPanel = lazy(() => import('@/components/SettingsPanel'));
@@ -223,8 +223,8 @@ I'm your intelligent companion powered by cutting-edge AI models. Here's what I 
     // Detect triggers and build system prompt
     const { systemPrompt: triggerPrompt, detectedTriggers } = detectTriggersAndBuildPrompt(userText);
     
-    // Build final system prompt with triggers
-    let finalSystemPrompt = triggerPrompt + ' ' + userText;
+    // Build final system prompt with triggers (backend only - not visible to user)
+    let finalSystemPrompt = triggerPrompt;
     if (webSearchEnabled) {
       finalSystemPrompt += '\n\nNote: You may use web knowledge if your model supports it.';
     }
@@ -235,6 +235,13 @@ I'm your intelligent companion powered by cutting-edge AI models. Here's what I 
     // Log detected triggers in dev mode
     if (import.meta.env.DEV && settings.enableDebugLogs && detectedTriggers.length > 0) {
       console.log('[DEBUG] Detected triggers:', detectedTriggers);
+      console.log('[DEBUG] System prompt:', finalSystemPrompt);
+    }
+    
+    // Store triggers in user message for later reference
+    const lastUserMessage = messages[messages.length - 1];
+    if (lastUserMessage && lastUserMessage.role === 'user') {
+      lastUserMessage.triggers = detectedTriggers;
     }
     
     const baseMessages = messages
@@ -282,6 +289,7 @@ I'm your intelligent companion powered by cutting-edge AI models. Here's what I 
         role: 'assistant',
         content: '',
         timestamp: Date.now(),
+        triggers: detectedTriggers.length > 0 ? detectedTriggers : undefined,
       };
 
       const chat = chats.find(c => c.id === chatId);
@@ -294,9 +302,21 @@ I'm your intelligent companion powered by cutting-edge AI models. Here's what I 
           }
           
           fullResponse += part?.text || '';
+          
+          // Parse trigger tags and extract clean content
+          const { cleanContent, taggedSegments } = parseTriggeredResponse(fullResponse);
+          
           // Always update with the same assistant message, just changing content
-          const currentMessages = [...messages, { ...assistantMessage, content: fullResponse }];
-          storage.updateChat(chatId, { messages: currentMessages });
+          const currentMessages = [...messages, { 
+            ...assistantMessage, 
+            content: cleanContent,
+            rawContent: fullResponse,
+            taggedSegments: taggedSegments.length > 0 ? taggedSegments : undefined,
+          }];
+          
+          if (!settings.incognitoMode) {
+            storage.updateChat(chatId, { messages: currentMessages });
+          }
           setChats(prevChats => prevChats.map(c => c.id === chatId ? { ...c, messages: currentMessages } : c));
         }
       } finally {
@@ -395,18 +415,22 @@ I'm your intelligent companion powered by cutting-edge AI models. Here's what I 
     };
 
     try {
+      // Get JWT token from Supabase for authenticated requests
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openrouter-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           messages: formattedMessages,
           model: modelId,
           temperature: settings.temperature,
           max_tokens: settings.maxTokens,
-          customApiKey: settings.customOpenRouterKey,
+          // SECURITY: Custom API keys should be stored server-side in Supabase secrets
+          // For now, removed to prevent client-side exposure
         }),
       });
 

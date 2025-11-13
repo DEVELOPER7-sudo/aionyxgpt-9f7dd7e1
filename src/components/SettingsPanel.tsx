@@ -149,33 +149,27 @@ const SettingsPanel = ({
         </div>
       </Card>
 
-      {/* Venice Uncensored Configuration */}
+      {/* Venice Uncensored Info */}
       {localSettings.textModel.includes('dolphin-mistral-24b-venice') && (
-        <Card className="p-6 space-y-4">
+        <Card className="p-6 space-y-4 bg-blue-500/5 border-blue-500/20">
           <div>
-            <h2 className="text-xl font-semibold mb-2">Venice Uncensored Model Settings</h2>
+            <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
+              🐬 Venice Uncensored Model
+            </h2>
             <p className="text-sm text-muted-foreground">
-              Configure OpenRouter API for Venice uncensored model
+              This model uses the server-side OpenRouter API configuration.
             </p>
           </div>
           
-          <div className="space-y-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-            <div className="space-y-2">
-              <Label htmlFor="venice-openrouter-key">OpenRouter API Key (Required for Venice)</Label>
-              <Input
-                id="venice-openrouter-key"
-                type="password"
-                placeholder="sk-or-v1-..."
-                value={localSettings.customOpenRouterKey || ''}
-                onChange={(e) =>
-                  setLocalSettings({ ...localSettings, customOpenRouterKey: e.target.value })
-                }
-                className="bg-input"
-              />
-              <p className="text-xs text-muted-foreground">
-                ⚠️ <strong>Security Warning:</strong> Your API key is stored in browser storage. Use a dedicated key for this app.
-              </p>
-            </div>
+          <div className="space-y-3">
+            <p className="text-sm">
+              ✅ <strong>Uncensored responses</strong> - No content filtering<br/>
+              ✅ <strong>Free to use</strong> - No rate limits<br/>
+              ✅ <strong>Secure</strong> - API keys stored server-side
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Note: For security reasons, custom API keys must be configured server-side by the administrator.
+            </p>
           </div>
         </Card>
       )}
@@ -473,64 +467,7 @@ const SettingsPanel = ({
           </div>
         </div>
 
-        {/* Color Customization */}
-        <div className="border-t border-border pt-6 space-y-4">
-          <div>
-            <Label className="text-base font-semibold">🎨 Color Customization</Label>
-            <p className="text-xs text-muted-foreground mt-1">Customize sidebar and background colors</p>
-          </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="sidebar-color">Sidebar Color</Label>
-              <Input
-                id="sidebar-color"
-                type="color"
-                value={`#${(localSettings.sidebarColor || '0 0% 10%').split(' ').map(v => 
-                  parseInt(v.replace('%', '')).toString(16).padStart(2, '0')
-                ).join('')}`}
-                onChange={(e) => {
-                  const hex = e.target.value;
-                  setLocalSettings({ ...localSettings, sidebarColor: hex });
-                }}
-                className="h-12 w-full"
-              />
-              <p className="text-xs text-muted-foreground">Click to choose a color</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="bg-color">Background Color</Label>
-              <Input
-                id="bg-color"
-                type="color"
-                value={`#${(localSettings.backgroundColor || '0 0% 0%').split(' ').map(v => 
-                  parseInt(v.replace('%', '')).toString(16).padStart(2, '0')
-                ).join('')}`}
-                onChange={(e) => {
-                  const hex = e.target.value;
-                  setLocalSettings({ ...localSettings, backgroundColor: hex });
-                }}
-                className="h-12 w-full"
-              />
-              <p className="text-xs text-muted-foreground">Click to choose a color</p>
-            </div>
-          </div>
-
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              setLocalSettings({ 
-                ...localSettings, 
-                sidebarColor: '0 0% 10%',
-                backgroundColor: '0 0% 0%' 
-              });
-              toast.success('Colors reset to default');
-            }}
-            className="w-full"
-          >
-            Reset to Default Colors
-          </Button>
-        </div>
 
         <div className="flex justify-end pt-4">
           <Button onClick={handleSave} size="lg" className="glow-blue">
