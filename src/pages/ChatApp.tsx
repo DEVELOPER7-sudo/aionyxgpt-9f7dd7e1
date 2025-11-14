@@ -187,30 +187,30 @@ I'm your intelligent companion powered by cutting-edge AI models. Here's what I 
     }
   };
 
-  const handleTextChat = async (messages: Message[], chatId: string) => {
-    // Validate input - extract user message first
-    const lastUser = [...messages].reverse().find((m) => m.role === 'user');
-    const userText = lastUser?.content ?? '';
-    
-    if (!userText.trim()) return;
-    
-    // Validate message length
-    if (userText.length > 10000) {
-      toast.error('Message too long (max 10,000 characters)');
-      setIsLoading(false);
-      return;
-    }
+  const handleTextChat = async (messages: Message[], chatId: string, selectedTriggers?: string[]) => {
+     // Validate input - extract user message first
+     const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+     const userText = lastUser?.content ?? '';
+     
+     if (!userText.trim()) return;
+     
+     // Validate message length
+     if (userText.length > 10000) {
+       toast.error('Message too long (max 10,000 characters)');
+       setIsLoading(false);
+       return;
+     }
 
-    // Use selected model
-    const modelId = settings.textModel;
-    
-    // Venice uncensored model uses OpenRouter endpoint only
-    const isVeniceModel = modelId.includes('dolphin-mistral-24b-venice');
-    
-    if (isVeniceModel) {
-      await handleOpenRouterChat(messages, chatId);
-      return;
-    }
+     // Use selected model
+     const modelId = settings.textModel;
+     
+     // Venice uncensored model uses OpenRouter endpoint only
+     const isVeniceModel = modelId.includes('dolphin-mistral-24b-venice');
+     
+     if (isVeniceModel) {
+       await handleOpenRouterChat(messages, chatId, selectedTriggers);
+       return;
+     }
 
     // @ts-ignore - Puter is loaded via script tag (HTML style)
     const puter = (window as any)?.puter;
@@ -221,7 +221,33 @@ I'm your intelligent companion powered by cutting-edge AI models. Here's what I 
     }
 
     // Detect triggers and build system prompt
-    const { systemPrompt: triggerPrompt, detectedTriggers } = detectTriggersAndBuildPrompt(userText);
+    let { systemPrompt: triggerPrompt, detectedTriggers } = detectTriggersAndBuildPrompt(userText);
+    
+    // Merge default triggers (from settings) + selected triggers
+    let extraInstructions: string[] = [];
+    if (settings.defaultTriggers && settings.defaultTriggers.length > 0) {
+      const allTriggers = getAllTriggers();
+      settings.defaultTriggers.forEach((trigName) => {
+        const found = allTriggers.find(a => a.trigger.toLowerCase() === trigName.toLowerCase());
+        if (found) {
+          extraInstructions.push(found.instruction);
+        }
+      });
+    }
+
+    if (selectedTriggers && selectedTriggers.length > 0) {
+      const allTriggers = getAllTriggers();
+      selectedTriggers.forEach((trigName) => {
+        const found = allTriggers.find(a => a.trigger.toLowerCase() === trigName.toLowerCase());
+        if (found && !extraInstructions.includes(found.instruction)) {
+          extraInstructions.push(found.instruction);
+        }
+      });
+    }
+
+    if (extraInstructions.length > 0) {
+      triggerPrompt += '\n\n' + extraInstructions.join('\n\n');
+    }
     
     // Build final system prompt with triggers (backend only - not visible to user)
     let finalSystemPrompt = triggerPrompt;
@@ -370,16 +396,42 @@ I'm your intelligent companion powered by cutting-edge AI models. Here's what I 
     }
   };
 
-  const handleOpenRouterChat = async (messages: Message[], chatId: string) => {
-    // Get user message for trigger detection
-    const lastUser = [...messages].reverse().find((m) => m.role === 'user');
-    const userText = lastUser?.content ?? '';
-    
-    // Detect triggers and build system prompt
-    const { systemPrompt: triggerPrompt, detectedTriggers } = detectTriggersAndBuildPrompt(userText);
-    
-    // Build final system prompt with triggers
-    let finalSystemPrompt = triggerPrompt + ' ' + userText;
+  const handleOpenRouterChat = async (messages: Message[], chatId: string, selectedTriggers?: string[]) => {
+     // Get user message for trigger detection
+     const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+     const userText = lastUser?.content ?? '';
+     
+     // Detect triggers and build system prompt
+     let { systemPrompt: triggerPrompt, detectedTriggers } = detectTriggersAndBuildPrompt(userText);
+
+    // Merge default triggers (from settings) + selected triggers
+    let extraInstructions: string[] = [];
+    if (settings.defaultTriggers && settings.defaultTriggers.length > 0) {
+      const allTriggers = getAllTriggers();
+      settings.defaultTriggers.forEach((trigName) => {
+        const found = allTriggers.find(a => a.trigger.toLowerCase() === trigName.toLowerCase());
+        if (found) {
+          extraInstructions.push(found.instruction);
+        }
+      });
+    }
+
+    if (selectedTriggers && selectedTriggers.length > 0) {
+      const allTriggers = getAllTriggers();
+      selectedTriggers.forEach((trigName) => {
+        const found = allTriggers.find(a => a.trigger.toLowerCase() === trigName.toLowerCase());
+        if (found && !extraInstructions.includes(found.instruction)) {
+          extraInstructions.push(found.instruction);
+        }
+      });
+    }
+
+    if (extraInstructions.length > 0) {
+      triggerPrompt += '\n\n' + extraInstructions.join('\n\n');
+    }
+     
+     // Build final system prompt with triggers
+     let finalSystemPrompt = triggerPrompt + ' ' + userText;
     if (webSearchEnabled) {
       finalSystemPrompt += '\n\nNote: You may use web knowledge if your model supports it.';
     }

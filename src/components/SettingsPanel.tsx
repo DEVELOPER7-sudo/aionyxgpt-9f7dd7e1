@@ -6,9 +6,11 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { AppSettings } from '@/types/chat';
 import { getAllTextModels, IMAGE_MODELS } from '@/lib/models';
 import { beautifyModelName, getCustomModels, addCustomModel, removeCustomModel } from '@/lib/model-utils';
+import { getAllTriggers } from '@/lib/triggers';
 import { toast } from 'sonner';
 import { Download, Upload, LogOut, LogIn, Trash2, Plus, X } from 'lucide-react';
 import { ThemeCustomizer } from '@/components/ThemeCustomizer';
@@ -149,30 +151,54 @@ const SettingsPanel = ({
         </div>
       </Card>
 
-      {/* Venice Uncensored Info */}
-      {localSettings.textModel.includes('dolphin-mistral-24b-venice') && (
-        <Card className="p-6 space-y-4 bg-blue-500/5 border-blue-500/20">
+      {/* Venice Uncensored Info & OpenRouter API Key */}
+      <Card className="p-6 space-y-4 bg-blue-500/5 border-blue-500/20">
+        <div>
+          <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
+            🐬 Venice Uncensored Model & OpenRouter API
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Configure your OpenRouter API key for accessing Venice and other uncensored models securely.
+          </p>
+        </div>
+        
+        <div className="space-y-3">
+          <p className="text-sm">
+            ✅ <strong>Uncensored responses</strong> - No content filtering<br/>
+            ✅ <strong>Server-side encryption</strong> - API keys encrypted at rest<br/>
+            ✅ <strong>Secure transmission</strong> - HTTPS only communication
+          </p>
+        </div>
+
+        {/* OpenRouter API Key Input */}
+        <div className="border-t border-blue-500/20 pt-4 space-y-4">
           <div>
-            <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
-              🐬 Venice Uncensored Model
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              This model uses the server-side OpenRouter API configuration.
+            <Label htmlFor="openrouter-key" className="text-base font-medium">OpenRouter API Key</Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Your API key is encrypted and stored securely on the server. It's never exposed to the browser.
             </p>
           </div>
           
-          <div className="space-y-3">
-            <p className="text-sm">
-              ✅ <strong>Uncensored responses</strong> - No content filtering<br/>
-              ✅ <strong>Free to use</strong> - No rate limits<br/>
-              ✅ <strong>Secure</strong> - API keys stored server-side
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Note: For security reasons, custom API keys must be configured server-side by the administrator.
+          <div className="space-y-2">
+            <Input
+              id="openrouter-key"
+              type="password"
+              placeholder="sk-or-v1-..."
+              value={localSettings.customOpenRouterKey || ''}
+              onChange={(e) =>
+                setLocalSettings({ ...localSettings, customOpenRouterKey: e.target.value })
+              }
+              className="bg-input font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground flex items-start gap-2">
+              <span>🔒</span>
+              <span>
+                Get your free API key from <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">openrouter.ai</a>. Your key will be securely transmitted to our server and encrypted.
+              </span>
             </p>
           </div>
-        </Card>
-      )}
+        </div>
+      </Card>
 
       {/* Model Selection */}
       <Card className="p-6 space-y-6">
@@ -399,6 +425,59 @@ const SettingsPanel = ({
                 Maximum length of generated responses
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Default Triggers */}
+        <div className="border-t border-border pt-6 space-y-4">
+          <div>
+            <Label className="text-base font-semibold">Default Triggers</Label>
+            <p className="text-xs text-muted-foreground mt-1">Automatically apply these triggers to all messages</p>
+          </div>
+
+          <div className="space-y-3">
+            <Select>
+              <SelectTrigger className="bg-input">
+                <SelectValue placeholder="Add default trigger..." />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {getAllTriggers().map((t) => (
+                  <SelectItem 
+                    key={t.trigger} 
+                    value={t.trigger}
+                    onClick={() => {
+                      if (!localSettings.defaultTriggers?.includes(t.trigger)) {
+                        setLocalSettings({
+                          ...localSettings,
+                          defaultTriggers: [...(localSettings.defaultTriggers || []), t.trigger],
+                        });
+                      }
+                    }}
+                  >
+                    {t.trigger}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {localSettings.defaultTriggers && localSettings.defaultTriggers.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {localSettings.defaultTriggers.map((trigger) => (
+                  <Badge key={trigger} variant="secondary" className="cursor-pointer group">
+                    {trigger}
+                    <X 
+                      className="w-3 h-3 ml-1 opacity-60 group-hover:opacity-100"
+                      onClick={() => {
+                        setLocalSettings({
+                          ...localSettings,
+                          defaultTriggers: localSettings.defaultTriggers?.filter(t => t !== trigger),
+                        });
+                      }}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

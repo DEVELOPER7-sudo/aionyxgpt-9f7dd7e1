@@ -45,7 +45,7 @@ import { cn } from '@/lib/utils';
 
 interface ChatAreaProps {
   chat: Chat | null;
-  onSendMessage: (content: string, imageData?: { imageUrl: string; prompt: string }) => void;
+  onSendMessage: (content: string, imageData?: { imageUrl: string; prompt: string }, selectedTriggers?: string[]) => void;
   onUpdateTitle: (chatId: string, title: string) => void;
   onDeleteChat: (chatId: string) => Promise<void>;
   onRegenerateMessage: (messageId: string) => void;
@@ -219,6 +219,8 @@ const ChatArea = ({
       if (chat) localStorage.removeItem(`draft_${chat.id}`);
     } else {
       onSendMessage(input);
+        onSendMessage(input, undefined, selectedTriggers);
+        onSendMessage(prompt, { imageUrl: uploadedImage, prompt }, selectedTriggers);
       setInput('');
       if (chat) localStorage.removeItem(`draft_${chat.id}`);
     }
@@ -589,16 +591,27 @@ const ChatArea = ({
             </div>
           )}
 
-          {/* Input */}
-          <div className="flex gap-1 md:gap-2">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type a message or /img for images..."
-              className="flex-1 min-h-[60px] max-h-[150px] resize-none text-base"
-              style={{ fontSize: '16px' }}
-            />
+          {/* Input with Character Counter */}
+          <div className="space-y-1">
+            <div className="flex gap-1 md:gap-2">
+              <div className="flex-1 relative">
+                <Textarea
+                  value={input}
+                  onChange={(e) => {
+                    if (e.target.value.length <= 10000) {
+                      setInput(e.target.value);
+                    }
+                  }}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Type a message or /img for images..."
+                  maxLength={10000}
+                  className="flex-1 min-h-[60px] max-h-[150px] resize-none text-base"
+                  style={{ fontSize: '16px' }}
+                />
+                <span className="absolute bottom-2 right-2 text-xs text-muted-foreground">
+                  {input.length}/10000
+                </span>
+              </div>
             <input
               ref={fileInputRef}
               type="file"
@@ -634,9 +647,10 @@ const ChatArea = ({
                 <Send className="w-4 h-4 md:w-5 md:h-5" />
               )}
             </Button>
-          </div>
+            </div>
+            </div>
 
-          {/* Trigger Selector & Advanced Menu */}
+            {/* Trigger Selector & Advanced Menu */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <TriggerSelector 
               selectedTriggers={selectedTriggers}

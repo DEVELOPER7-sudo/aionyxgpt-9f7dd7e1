@@ -52,25 +52,59 @@ const LogCenter = () => {
     };
   }, []);
 
+  const sanitizeLog = (log: any): LogEntry => {
+    // Sanitize to prevent sensitive data exposure
+    const sanitized = { ...log };
+    
+    // Remove potentially sensitive keys from details
+    if (sanitized.details) {
+      if (typeof sanitized.details === 'object') {
+        const sensitiveKeys = ['password', 'apiKey', 'api_key', 'token', 'auth', 'secret', 'access_token'];
+        Object.keys(sanitized.details).forEach(key => {
+          if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
+            sanitized.details[key] = '[REDACTED]';
+          }
+        });
+      }
+    }
+    
+    // Truncate message if too long
+    if (sanitized.message && sanitized.message.length > 1000) {
+      sanitized.message = sanitized.message.substring(0, 1000) + '...[truncated]';
+    }
+    
+    return sanitized;
+  };
+
   const addLog = (type: LogEntry['type'], message: string, details?: any) => {
     const newLog: LogEntry = {
       id: Date.now().toString(),
       type,
-      message,
+      message: message.substring(0, 1000), // Limit message length
       timestamp: Date.now(),
       details,
     };
 
     setLogs((prev) => {
-      const updated = [newLog, ...prev].slice(0, 500); // Keep last 500 logs
-      localStorage.setItem('app_logs', JSON.stringify(updated));
+      const sanitized = sanitizeLog(newLog);
+      const updated = [sanitized, ...prev].slice(0, 500); // Keep last 500 logs
+      try {
+        localStorage.setItem('app_logs', JSON.stringify(updated));
+      } catch (e) {
+        // If localStorage is full, clear old logs
+        console.warn('localStorage full, clearing old logs');
+        localStorage.removeItem('app_logs');
+        localStorage.setItem('app_logs', JSON.stringify(updated.slice(0, 100)));
+      }
       return updated;
     });
   };
 
   const clearLogs = () => {
-    setLogs([]);
-    localStorage.removeItem('app_logs');
+    if (confirm('Are you sure you want to clear all logs? This action cannot be undone.')) {
+      setLogs([]);
+      localStorage.removeItem('app_logs');
+    }
   };
 
   const exportLogs = () => {

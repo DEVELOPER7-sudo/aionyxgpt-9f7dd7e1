@@ -1,17 +1,120 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('VITE_SUPABASE_URL') || '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+// Rate limiting: map of user_id -> { count, resetTime }
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_REQUESTS = 50; // 50 requests
+const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // per hour
+
+const checkRateLimit = (userId: string): { allowed: boolean; remaining: number; resetTime: number } => {
+  const now = Date.now();
+  let userLimit = rateLimitMap.get(userId);
+
+  if (!userLimit || now > userLimit.resetTime) {
+    userLimit = { count: 0, resetTime: now + RATE_LIMIT_WINDOW };
+    rateLimitMap.set(userId, userLimit);
+  }
+
+  const allowed = userLimit.count < RATE_LIMIT_REQUESTS;
+  if (allowed) {
+    userLimit.count++;
+  }
+
+  return {
+    allowed,
+    remaining: Math.max(0, RATE_LIMIT_REQUESTS - userLimit.count),
+    resetTime: userLimit.resetTime,
+  };
+};
+
+const verifyJWT = async (token: string): Promise<{ sub: string } | null> => {
+  try {
+    // Verify JWT with Supabase
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Missing Supabase credentials');
+      return null;
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    
+    // Use Supabase's JWT verification
+    const { data, error } = await supabase.auth.getUser(token);
+    
+    if (error || !data.user) {
+      return null;
+    }
+
+    return { sub: data.user.id };
+  } catch (error) {
+    console.error('JWT verification error:', error);
+    return null;
+  }
 };
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      headers: corsHeaders,
+      status: 204 
+    });
   }
 
   try {
-    const { messages, model, temperature, max_tokens, customApiKey } = await req.json();
+    // Verify JWT token
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const userPayload = await verifyJWT(token);
+
+    if (!userPayload) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or expired token' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Check rate limit
+    const rateLimit = checkRateLimit(userPayload.sub);
+    if (!rateLimit.allowed) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Rate limit exceeded. Maximum 50 requests per hour.',
+          resetTime: rateLimit.resetTime,
+        }),
+        {
+          status: 429,
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'Retry-After': String(Math.ceil((rateLimit.resetTime - Date.now()) / 1000)),
+          },
+        }
+      );
+    }
+
+    const { messages, model, temperature, max_tokens } = await req.json();
     
     // Use custom API key if provided, otherwise use default
     const OPENROUTER_API_KEY = customApiKey || Deno.env.get('OPENROUTER_API_KEY');
@@ -71,11 +174,13 @@ serve(async (req) => {
       throw new Error(`OpenRouter API error: ${response.status}`);
     }
 
-    // Return the streaming response
+    // Return the streaming response with rate limit headers
     return new Response(response.body, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'text/event-stream',
+        'X-RateLimit-Remaining': String(rateLimit.remaining),
+        'X-RateLimit-Reset': String(rateLimit.resetTime),
       },
     });
   } catch (error) {
@@ -85,7 +190,10 @@ serve(async (req) => {
       JSON.stringify({ error: errorMessage }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+        },
       }
     );
   }
