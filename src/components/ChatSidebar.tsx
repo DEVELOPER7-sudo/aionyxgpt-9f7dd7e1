@@ -42,9 +42,10 @@ const ChatSidebar = ({
 }: ChatSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredChats = chats.filter(chat =>
-    chat.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredChats = chats.filter(chat => {
+    const title = typeof chat.title === 'string' ? chat.title : 'Untitled Chat';
+    return title.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   return (
     <div

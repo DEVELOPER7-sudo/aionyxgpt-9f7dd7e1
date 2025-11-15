@@ -129,7 +129,7 @@ const ChatApp = () => {
        minute: '2-digit',
        hour12: true 
      });
-     const chatTitle = botName ? botName : `New Chat At ${timestamp}`;
+     const chatTitle = botName && typeof botName === 'string' ? botName : `New Chat At ${timestamp}`;
 
      const newChat: Chat = {
        id: Date.now().toString(),
