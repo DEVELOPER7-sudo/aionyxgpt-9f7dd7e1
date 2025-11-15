@@ -296,17 +296,29 @@ const TriggerGallery = ({
 
         {/* Gallery Dialog */}
         <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
-            <DialogHeader>
-              <DialogTitle>Trigger Gallery</DialogTitle>
-              <DialogDescription>
-                Select triggers to apply to your message
-              </DialogDescription>
+          <DialogContent className="max-w-4xl max-h-[85vh] p-0 flex flex-col">
+            <DialogHeader className="px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <DialogTitle>Trigger Gallery</DialogTitle>
+                  <DialogDescription>
+                    Browse available triggers to understand their purpose
+                  </DialogDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setGalleryOpen(false)}
+                  className="h-8 w-8 -mr-2"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </DialogHeader>
 
-            <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-hidden flex flex-col px-6 py-4">
               {/* Filters */}
-              <div className="flex gap-2 p-4 border-b border-border flex-shrink-0">
+              <div className="flex gap-2 mb-4 flex-shrink-0">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -332,50 +344,39 @@ const TriggerGallery = ({
                 </Select>
               </div>
 
-              {/* Trigger Cards */}
-              <ScrollArea className="flex-1">
-                <div className="p-4 space-y-4">
+              {/* Trigger Cards - Scrollable */}
+              <ScrollArea className="flex-1 pr-4">
+                <div className="space-y-4">
                   {Object.keys(groupedTriggers).length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
+                    <div className="text-center py-12 text-muted-foreground">
                       No triggers found
                     </div>
                   ) : (
                     Object.entries(groupedTriggers).map(([category, categoryTriggers]) => (
                       <div key={category}>
-                        <h4 className="text-sm font-semibold mb-2">
+                        <h4 className="text-sm font-semibold mb-3">
                           <Badge className={getCategoryColor(category as Trigger['category'])}>
                             {category}
                           </Badge>
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {categoryTriggers.map(trigger => {
-                            const isSelected = selectedTriggers.includes(trigger.trigger);
-                            return (
-                              <button
-                                key={trigger.trigger}
-                                onClick={() => toggleTriggerSelection(trigger.trigger)}
-                                className={cn(
-                                  'text-left p-3 rounded-lg border transition-all text-sm',
-                                  'hover:shadow-sm',
-                                  isSelected
-                                    ? 'border-primary bg-primary/10'
-                                    : 'border-border hover:border-primary/50'
-                                )}
-                              >
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="font-medium">{trigger.trigger}</span>
-                                  {isSelected && (
-                                    <Badge variant="default" className="text-xs">
-                                      ✓
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-xs text-muted-foreground line-clamp-2">
-                                  {trigger.system_instruction.replace(/Use tags.*?final_response\.\s*/i, '')}
-                                </p>
-                              </button>
-                            );
-                          })}
+                          {categoryTriggers.map(trigger => (
+                            <div
+                              key={trigger.trigger}
+                              className={cn(
+                                'p-3 rounded-lg border transition-all text-sm',
+                                'border-border hover:border-primary/50 hover:shadow-sm',
+                                'bg-card/50 hover:bg-card'
+                              )}
+                            >
+                              <div className="flex items-start justify-between mb-1">
+                                <span className="font-medium">{trigger.trigger}</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-3">
+                                {trigger.system_instruction.replace(/Use tags.*?final_response\.\s*/i, '')}
+                              </p>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     ))
