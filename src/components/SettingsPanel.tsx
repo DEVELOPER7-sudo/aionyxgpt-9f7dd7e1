@@ -428,58 +428,7 @@ const SettingsPanel = ({
           </div>
         </div>
 
-        {/* Default Triggers */}
-        <div className="border-t border-border pt-6 space-y-4">
-          <div>
-            <Label className="text-base font-semibold">Default Triggers</Label>
-            <p className="text-xs text-muted-foreground mt-1">Automatically apply these triggers to all messages</p>
-          </div>
 
-          <div className="space-y-3">
-            <Select>
-              <SelectTrigger className="bg-input">
-                <SelectValue placeholder="Add default trigger..." />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {getAllTriggers().map((t) => (
-                  <SelectItem 
-                    key={t.trigger} 
-                    value={t.trigger}
-                    onClick={() => {
-                      if (!localSettings.defaultTriggers?.includes(t.trigger)) {
-                        setLocalSettings({
-                          ...localSettings,
-                          defaultTriggers: [...(localSettings.defaultTriggers || []), t.trigger],
-                        });
-                      }
-                    }}
-                  >
-                    {t.trigger}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {localSettings.defaultTriggers && localSettings.defaultTriggers.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-2">
-                {localSettings.defaultTriggers.map((trigger) => (
-                  <Badge key={trigger} variant="secondary" className="cursor-pointer group">
-                    {trigger}
-                    <X 
-                      className="w-3 h-3 ml-1 opacity-60 group-hover:opacity-100"
-                      onClick={() => {
-                        setLocalSettings({
-                          ...localSettings,
-                          defaultTriggers: localSettings.defaultTriggers?.filter(t => t !== trigger),
-                        });
-                      }}
-                    />
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* Advanced Options */}
         <div className="border-t border-border pt-6 space-y-4">

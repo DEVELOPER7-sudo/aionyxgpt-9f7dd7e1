@@ -268,66 +268,121 @@ const CustomBotsManager = ({ onSelectBot }: CustomBotsManagerProps) => {
               {filteredBots.map(bot => (
                 <Card
                   key={bot.id}
-                  className="p-4 hover:shadow-lg transition-all border-2 hover:border-primary/30"
+                  className={cn(
+                    "p-5 hover:shadow-xl transition-all border-2 rounded-xl overflow-hidden",
+                    "relative before:absolute before:inset-0 before:bg-gradient-to-br before:opacity-0",
+                    "hover:before:opacity-5 before:transition-opacity",
+                    bot.isPublic 
+                      ? "border-green-500/20 hover:border-green-500/40 hover:bg-green-500/5" 
+                      : "border-purple-500/20 hover:border-purple-500/40 hover:bg-purple-500/5"
+                  )}
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      {bot.logo ? (
-                        <img src={bot.logo} alt={bot.name} className="w-12 h-12 rounded-lg" />
-                      ) : (
-                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center">
-                          <Bot className="w-6 h-6 text-white" />
+                  {/* Header with Logo and Badge */}
+                  <div className="flex items-start justify-between mb-4 relative z-10">
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="flex-shrink-0">
+                        {bot.logo ? (
+                          <img src={bot.logo} alt={bot.name} className="w-14 h-14 rounded-lg object-cover border border-border" />
+                        ) : (
+                          <div className={cn(
+                            "w-14 h-14 rounded-lg flex items-center justify-center border border-border",
+                            "bg-gradient-to-br",
+                            bot.isPublic 
+                              ? "from-green-500/20 to-green-600/10"
+                              : "from-purple-500/20 to-purple-600/10"
+                          )}>
+                            <Bot className={cn(
+                              "w-7 h-7",
+                              bot.isPublic ? "text-green-600" : "text-purple-600"
+                            )} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base truncate">{bot.name}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge 
+                            variant="outline" 
+                            className={cn(
+                              "text-xs",
+                              bot.isPublic 
+                                ? "bg-green-500/10 text-green-700 border-green-500/30"
+                                : "bg-purple-500/10 text-purple-700 border-purple-500/30"
+                            )}
+                          >
+                            {bot.category}
+                          </Badge>
+                          <Badge 
+                            variant={bot.isPublic ? 'default' : 'secondary'} 
+                            className={cn(
+                              "text-xs gap-1",
+                              bot.isPublic 
+                                ? "bg-green-600 hover:bg-green-700"
+                                : "bg-purple-600 hover:bg-purple-700"
+                            )}
+                          >
+                            {bot.isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                          </Badge>
                         </div>
-                      )}
-                      <div>
-                        <h3 className="font-semibold text-base">{bot.name}</h3>
-                        <Badge variant="outline" className="text-xs mt-1">
-                          {bot.category}
-                        </Badge>
                       </div>
                     </div>
-                    <Badge variant={bot.isPublic ? 'default' : 'secondary'} className="text-xs">
-                      {bot.isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                    </Badge>
                   </div>
 
-                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                    {bot.description || 'No description'}
+                  {/* Description */}
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                    {bot.description || 'No description provided'}
                   </p>
 
-                  <div className="bg-muted/50 rounded p-2 mb-3">
-                    <p className="text-xs text-muted-foreground font-mono line-clamp-3">
+                  {/* System Prompt Preview */}
+                  <div className={cn(
+                    "rounded-lg p-3 mb-4 text-xs border",
+                    bot.isPublic
+                      ? "bg-green-50/50 dark:bg-green-950/20 border-green-500/20"
+                      : "bg-purple-50/50 dark:bg-purple-950/20 border-purple-500/20"
+                  )}>
+                    <p className="text-muted-foreground font-mono line-clamp-2">
                       {bot.systemPrompt}
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
-                    <span>Used {bot.usageCount || 0} times</span>
-                    <span>
-                      {new Date(bot.updatedAt).toLocaleDateString()}
-                    </span>
+                  {/* Stats Footer */}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-4 pb-3 border-b border-border">
+                    <div className="flex items-center gap-4">
+                      <span className="flex items-center gap-1">
+                        <Play className="w-3 h-3" />
+                        {bot.usageCount || 0} uses
+                      </span>
+                      <span>{new Date(bot.updatedAt).toLocaleDateString()}</span>
+                    </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 relative z-10">
                     <Button
                       size="sm"
-                      className="flex-1"
+                      className={cn(
+                        "flex-1",
+                        bot.isPublic
+                          ? "bg-green-600 hover:bg-green-700"
+                          : "bg-purple-600 hover:bg-purple-700"
+                      )}
                       onClick={() => handleUseBot(bot)}
                     >
                       <Play className="w-3 h-3 mr-1" />
-                      Use Bot
+                      Use
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(bot)}
+                      className="hover:border-primary hover:text-primary"
                     >
                       <Edit className="w-3 h-3" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-destructive hover:text-destructive"
+                      className="text-destructive hover:text-destructive hover:border-destructive"
                       onClick={() => handleDelete(bot.id)}
                     >
                       <Trash2 className="w-3 h-3" />

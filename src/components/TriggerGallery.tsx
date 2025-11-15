@@ -46,7 +46,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const TriggerGallery = () => {
+interface TriggerGalleryProps {
+  selectedTriggers?: string[];
+  onTriggersChange?: (triggers: string[]) => void;
+  isCompactMode?: boolean;
+}
+
+const TriggerGallery = ({ 
+  selectedTriggers = [], 
+  onTriggersChange,
+  isCompactMode = false 
+}: TriggerGalleryProps) => {
   const [triggers, setTriggers] = useState<Trigger[]>(getAllTriggers());
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -54,6 +64,7 @@ const TriggerGallery = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingTrigger, setEditingTrigger] = useState<Trigger | null>(null);
   const [isNewTrigger, setIsNewTrigger] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -233,6 +244,152 @@ const TriggerGallery = () => {
     }
   };
 
+  const toggleTriggerSelection = (triggerName: string) => {
+    if (!onTriggersChange) return;
+    if (selectedTriggers.includes(triggerName)) {
+      onTriggersChange(selectedTriggers.filter(t => t !== triggerName));
+    } else {
+      onTriggersChange([...selectedTriggers, triggerName]);
+    }
+  };
+
+  // Compact mode for ChatArea
+  if (isCompactMode && onTriggersChange) {
+    return (
+      <div className="flex flex-wrap gap-2 items-center">
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            'gap-2',
+            selectedTriggers.length > 0 && 'border-primary bg-primary/5'
+          )}
+          onClick={() => setGalleryOpen(true)}
+        >
+          <Search className="w-4 h-4" />
+          Trigger Gallery
+          {selectedTriggers.length > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+              {selectedTriggers.length}
+            </Badge>
+          )}
+        </Button>
+
+        {/* Selected Triggers Pills */}
+        {selectedTriggers.map(triggerName => {
+          const trigger = triggers.find(t => t.trigger === triggerName);
+          if (!trigger) return null;
+          return (
+            <Badge
+              key={triggerName}
+              className={cn(
+                'gap-1 cursor-pointer',
+                getCategoryColor(trigger.category)
+              )}
+              onClick={() => toggleTriggerSelection(triggerName)}
+            >
+              {trigger.trigger}
+              <X className="w-3 h-3" />
+            </Badge>
+          );
+        })}
+
+        {/* Gallery Dialog */}
+        <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle>Trigger Gallery</DialogTitle>
+              <DialogDescription>
+                Select triggers to apply to your message
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-hidden flex flex-col">
+              {/* Filters */}
+              <div className="flex gap-2 p-4 border-b border-border flex-shrink-0">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search triggers..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                    autoFocus
+                  />
+                </div>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Trigger Cards */}
+              <ScrollArea className="flex-1">
+                <div className="p-4 space-y-4">
+                  {Object.keys(groupedTriggers).length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No triggers found
+                    </div>
+                  ) : (
+                    Object.entries(groupedTriggers).map(([category, categoryTriggers]) => (
+                      <div key={category}>
+                        <h4 className="text-sm font-semibold mb-2">
+                          <Badge className={getCategoryColor(category as Trigger['category'])}>
+                            {category}
+                          </Badge>
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {categoryTriggers.map(trigger => {
+                            const isSelected = selectedTriggers.includes(trigger.trigger);
+                            return (
+                              <button
+                                key={trigger.trigger}
+                                onClick={() => toggleTriggerSelection(trigger.trigger)}
+                                className={cn(
+                                  'text-left p-3 rounded-lg border transition-all text-sm',
+                                  'hover:shadow-sm',
+                                  isSelected
+                                    ? 'border-primary bg-primary/10'
+                                    : 'border-border hover:border-primary/50'
+                                )}
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="font-medium">{trigger.trigger}</span>
+                                  {isSelected && (
+                                    <Badge variant="default" className="text-xs">
+                                      ✓
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                  {trigger.system_instruction.replace(/Use tags.*?final_response\.\s*/i, '')}
+                                </p>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  // Full admin mode
   return (
     <div className="h-full flex flex-col">
       {/* Header */}

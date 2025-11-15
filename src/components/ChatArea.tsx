@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import LoadingDots from '@/components/LoadingDots';
 import WelcomeMessage from '@/components/WelcomeMessage';
 import TriggerBar from '@/components/TriggerBar';
-import TriggerSelector from '@/components/TriggerSelector';
+import TriggerGallery from '@/components/TriggerGallery';
 import TriggerTagWrapper from '@/components/TriggerTagWrapper';
 import {
   Send,
@@ -87,6 +87,7 @@ const ChatArea = ({
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(new Set());
   const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
+  const [messageFeedback, setMessageFeedback] = useState<Record<string, 'up' | 'down' | null>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -262,6 +263,16 @@ const ChatArea = ({
   const cancelEditingMessage = () => {
     setEditingMessageId(null);
     setEditingMessageContent('');
+  };
+
+  const handleMessageFeedback = (messageId: string, feedbackType: 'up' | 'down') => {
+    const current = messageFeedback[messageId];
+    const newFeedback = current === feedbackType ? null : feedbackType;
+    setMessageFeedback({ ...messageFeedback, [messageId]: newFeedback });
+    
+    if (newFeedback) {
+      toast.success(`Feedback: ${feedbackType === 'up' ? '👍 Helpful' : '👎 Not helpful'}`);
+    }
   };
 
   if (!chat) {
@@ -504,31 +515,51 @@ const ChatArea = ({
                   </p>
                 )}
                 {message.role === 'assistant' && (
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-border animate-fade-in">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 transition-all duration-200 hover:scale-110"
-                      onClick={() => copyToClipboard(message.content)}
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 transition-all duration-200 hover:scale-110">
-                      <ThumbsUp className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 transition-all duration-200 hover:scale-110">
-                      <ThumbsDown className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 transition-all duration-200 hover:scale-110 hover:rotate-180"
-                      onClick={() => onRegenerateMessage(message.id)}
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
+                   <div className="flex gap-2 mt-3 pt-3 border-t border-border animate-fade-in">
+                     <Button
+                       variant="ghost"
+                       size="icon"
+                       className="h-6 w-6 transition-all duration-200 hover:scale-110"
+                       onClick={() => copyToClipboard(message.content)}
+                       title="Copy to clipboard"
+                     >
+                       <Copy className="w-4 h-4" />
+                     </Button>
+                     <Button 
+                       variant="ghost" 
+                       size="icon" 
+                       className={cn(
+                         "h-6 w-6 transition-all duration-200 hover:scale-110",
+                         messageFeedback[message.id] === 'up' && "text-green-500"
+                       )}
+                       onClick={() => handleMessageFeedback(message.id, 'up')}
+                       title="Helpful"
+                     >
+                       <ThumbsUp className="w-4 h-4" />
+                     </Button>
+                     <Button 
+                       variant="ghost" 
+                       size="icon" 
+                       className={cn(
+                         "h-6 w-6 transition-all duration-200 hover:scale-110",
+                         messageFeedback[message.id] === 'down' && "text-red-500"
+                       )}
+                       onClick={() => handleMessageFeedback(message.id, 'down')}
+                       title="Not helpful"
+                     >
+                       <ThumbsDown className="w-4 h-4" />
+                     </Button>
+                     <Button
+                       variant="ghost"
+                       size="icon"
+                       className="h-6 w-6 transition-all duration-200 hover:scale-110 hover:rotate-180"
+                       onClick={() => onRegenerateMessage(message.id)}
+                       title="Regenerate message"
+                     >
+                       <RotateCcw className="w-4 h-4" />
+                     </Button>
+                   </div>
+                 )}
                 {message.role === 'user' && !editingMessageId && (
                   <div className="flex justify-end mt-2">
                     <Button
@@ -648,11 +679,12 @@ const ChatArea = ({
             </div>
             </div>
 
-            {/* Trigger Selector & Advanced Menu */}
+            {/* Trigger Gallery & Advanced Menu */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <TriggerSelector 
+            <TriggerGallery 
               selectedTriggers={selectedTriggers}
               onTriggersChange={setSelectedTriggers}
+              isCompactMode={true}
             />
             <Button
               variant="outline"
