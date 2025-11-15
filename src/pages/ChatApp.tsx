@@ -133,8 +133,9 @@ const ChatApp = () => {
      setChats([newChat, ...chats]);
      setCurrentChatId(newChat.id);
      storage.setCurrentChatId(newChat.id);
+     setCurrentView('chat');
      setMobileMenuOpen(false);
-   };
+     };
 
   // Generate chat title based on first prompt and selected model
   const generateChatTitle = async (firstPrompt: string, modelId: string) => {
