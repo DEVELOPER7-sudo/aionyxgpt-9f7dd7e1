@@ -8,8 +8,8 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3000',  // For development
 ];
 
-const corsHeaders = (origin?: string) => ({
-  'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin || '') ? origin : '',
+const corsHeaders = (origin?: string | null): Record<string, string> => ({
+  'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin || '') ? (origin || '') : '',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 });
@@ -105,6 +105,22 @@ serve(async (req) => {
       );
     }
 
+    // Reject anonymous users
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
+    const { data: userData } = await supabase.auth.getUser(token);
+    
+    if (!userData.user || userData.user.role === 'anon') {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required. Please sign in.' }),
+        {
+          status: 401,
+          headers: { ...headers, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     // Check rate limit
     const rateLimit = checkRateLimit(userPayload.sub);
     if (!rateLimit.allowed) {
@@ -125,6 +141,48 @@ serve(async (req) => {
     }
 
     const { messages, model, temperature, max_tokens } = await req.json();
+    
+    // Validate input
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid messages format' }),
+        {
+          status: 400,
+          headers: { ...headers, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+    
+    // Validate message content and roles
+    for (const msg of messages) {
+      if (!msg.role || !['user', 'assistant', 'system'].includes(msg.role)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid message role' }),
+          {
+            status: 400,
+            headers: { ...headers, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      if (typeof msg.content !== 'string') {
+        return new Response(
+          JSON.stringify({ error: 'Invalid message content' }),
+          {
+            status: 400,
+            headers: { ...headers, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      if (msg.content.length > 10000) {
+        return new Response(
+          JSON.stringify({ error: 'Message too long (max 10,000 characters)' }),
+          {
+            status: 400,
+            headers: { ...headers, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    }
     
     // Use OpenRouter API key from server environment
     const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');

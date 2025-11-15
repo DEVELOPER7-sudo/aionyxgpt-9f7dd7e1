@@ -16,7 +16,7 @@ import MotionBackground from '@/components/MotionBackground';
 import { createPuterAPILogger, createOpenRouterAPILogger } from '@/lib/api-logger';
 import { supabase } from '@/integrations/supabase/client';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
-import { detectTriggersAndBuildPrompt, parseTriggeredResponse } from '@/lib/triggers';
+import { detectTriggersAndBuildPrompt, parseTriggeredResponse, getAllTriggers } from '@/lib/triggers';
 import { chatMessageSchema } from '@/lib/validation';
 
 // Lazy load heavy components
@@ -233,21 +233,21 @@ I'm your intelligent companion powered by cutting-edge AI models. Here's what I 
     // Merge default triggers (from settings) + selected triggers
     let extraInstructions: string[] = [];
     if (settings.defaultTriggers && settings.defaultTriggers.length > 0) {
-      const allTriggers = getAllTriggers();
+      const allTriggersData = getAllTriggers();
       settings.defaultTriggers.forEach((trigName) => {
-        const found = allTriggers.find(a => a.trigger.toLowerCase() === trigName.toLowerCase());
+        const found = allTriggersData.find(a => a.trigger.toLowerCase() === trigName.toLowerCase());
         if (found) {
-          extraInstructions.push(found.instruction);
+          extraInstructions.push(found.system_instruction);
         }
       });
     }
 
     if (selectedTriggers && selectedTriggers.length > 0) {
-      const allTriggers = getAllTriggers();
+      const allTriggersData = getAllTriggers();
       selectedTriggers.forEach((trigName) => {
-        const found = allTriggers.find(a => a.trigger.toLowerCase() === trigName.toLowerCase());
-        if (found && !extraInstructions.includes(found.instruction)) {
-          extraInstructions.push(found.instruction);
+        const found = allTriggersData.find(a => a.trigger.toLowerCase() === trigName.toLowerCase());
+        if (found && !extraInstructions.includes(found.system_instruction)) {
+          extraInstructions.push(found.system_instruction);
         }
       });
     }
@@ -427,21 +427,21 @@ I'm your intelligent companion powered by cutting-edge AI models. Here's what I 
     // Merge default triggers (from settings) + selected triggers
     let extraInstructions: string[] = [];
     if (settings.defaultTriggers && settings.defaultTriggers.length > 0) {
-      const allTriggers = getAllTriggers();
+      const allTriggersData = getAllTriggers();
       settings.defaultTriggers.forEach((trigName) => {
-        const found = allTriggers.find(a => a.trigger.toLowerCase() === trigName.toLowerCase());
+        const found = allTriggersData.find(a => a.trigger.toLowerCase() === trigName.toLowerCase());
         if (found) {
-          extraInstructions.push(found.instruction);
+          extraInstructions.push(found.system_instruction);
         }
       });
     }
 
     if (selectedTriggers && selectedTriggers.length > 0) {
-      const allTriggers = getAllTriggers();
+      const allTriggersData = getAllTriggers();
       selectedTriggers.forEach((trigName) => {
-        const found = allTriggers.find(a => a.trigger.toLowerCase() === trigName.toLowerCase());
-        if (found && !extraInstructions.includes(found.instruction)) {
-          extraInstructions.push(found.instruction);
+        const found = allTriggersData.find(a => a.trigger.toLowerCase() === trigName.toLowerCase());
+        if (found && !extraInstructions.includes(found.system_instruction)) {
+          extraInstructions.push(found.system_instruction);
         }
       });
     }
