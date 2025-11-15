@@ -176,7 +176,7 @@ const ChatApp = () => {
   };
 
   const handleSendMessage = async (content: string, imageData?: { imageUrl: string; prompt: string }) => {
-    if (!currentChatId) return;
+    if (!currentChatId || !currentChat) return;
 
     const isImageCommand = content.trim().startsWith('/img');
     const isVisionRequest = !!imageData;
@@ -189,7 +189,10 @@ const ChatApp = () => {
       imageUrl: isVisionRequest ? imageData.imageUrl : undefined,
     };
 
-    const updatedChat = { ...currentChat! };
+    // Check if this is the first user message BEFORE adding the new message
+    const isFirstMessage = !currentChat.messages.some(m => m.role === 'user');
+
+    const updatedChat = { ...currentChat };
     updatedChat.messages = [...updatedChat.messages, userMessage];
     storage.updateChat(currentChatId, { messages: updatedChat.messages });
     setChats(chats.map(c => c.id === currentChatId ? updatedChat : c));
@@ -197,7 +200,6 @@ const ChatApp = () => {
     setIsLoading(true);
 
     // Generate title if this is the first user message
-    const isFirstMessage = updatedChat.messages.filter(m => m.role === 'user').length === 1;
     if (isFirstMessage && !isImageCommand) {
       const generatedTitle = await generateChatTitle(content.substring(0, 200), settings.textModel);
       if (generatedTitle) {
