@@ -20,7 +20,6 @@ import { toast } from 'sonner';
 import LoadingDots from '@/components/LoadingDots';
 import WelcomeMessage from '@/components/WelcomeMessage';
 import TriggerBar from '@/components/TriggerBar';
-import TriggerGallery from '@/components/TriggerGallery';
 import TriggerTagWrapper from '@/components/TriggerTagWrapper';
 import {
   Send,
@@ -679,13 +678,8 @@ const ChatArea = ({
             </div>
             </div>
 
-            {/* Trigger Gallery & Advanced Menu */}
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <TriggerGallery 
-              selectedTriggers={selectedTriggers}
-              onTriggersChange={setSelectedTriggers}
-              isCompactMode={true}
-            />
+            {/* Advanced Menu */}
+          <div className="flex items-center justify-end gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
