@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { User, LogOut, Menu, Coins } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-const onyxLogo = 'https://jdzslimvugstdnfsylzz.supabase.co/storage/v1/object/sign/chat-files/94c24d23-c9c3-4187-a67a-ef03574ad190/1763184330937-57134.png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJjaGF0LWZpbGVzLzk0YzI0ZDIzLWM5YzMtNDE4Ny1hNjdhLWVmMDM1NzRhZDE5MC8xNzYzMTg0MzMwOTM3LTU3MTM0LnBuZyIsImlhdCI6MTczOTE4NDMzMCwiZXhwIjoxNzQwNzkyMzMwfQ.jvP9pNmK4zqW2xVJl8mK3oP2sR5uT8vW9xY0zZ1aB2c';
+import onyxLogo from '@/assets/onyx-logo.png';
 import {
   DropdownMenu,
   DropdownMenuContent,

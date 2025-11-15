@@ -9,13 +9,13 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "https://jdzslimvugstdnfsylzz.supabase.co/storage/v1/object/sign/chat-files/94c24d23-c9c3-4187-a67a-ef03574ad190/1763184330937-57134.png?token=[REDACTED:jwt-token]",
+      "src": "/logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://jdzslimvugstdnfsylzz.supabase.co/storage/v1/object/sign/chat-files/94c24d23-c9c3-4187-a67a-ef03574ad190/1763184330937-57134.png?token=[REDACTED:jwt-token]",
+      "src": "/logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

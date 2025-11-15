@@ -80,10 +80,10 @@ const TriggerTagWrapper = ({ tagName, content, category }: TriggerTagWrapperProp
             ul: ({node, ...props}) => <ul className="list-disc list-inside space-y-1 text-sm" {...props} />,
             ol: ({node, ...props}) => <ol className="list-decimal list-inside space-y-1 text-sm" {...props} />,
             li: ({node, ...props}) => <li className="text-sm" {...props} />,
-            code: ({node, inline, ...props}) => 
-              inline ? 
-                <code className="bg-black/20 px-1.5 py-0.5 rounded text-xs font-mono" {...props} /> :
-                <code className="block bg-black/30 p-2 rounded text-xs font-mono overflow-x-auto" {...props} />,
+            code: ({node, className, ...props}) => 
+              className ? 
+                <code className="block bg-black/30 p-2 rounded text-xs font-mono overflow-x-auto" {...props} /> :
+                <code className="bg-black/20 px-1.5 py-0.5 rounded text-xs font-mono" {...props} />,
             blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-current/30 pl-3 italic opacity-80" {...props} />,
           }}
         >
