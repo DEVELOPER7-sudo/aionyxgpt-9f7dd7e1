@@ -63,8 +63,6 @@ export const useAuth = () => {
   };
 
   const signOut = async () => {
-    // Clear guest flag and sign out from backend if signed in
-    localStorage.removeItem('guestMode');
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast.error(error.message);

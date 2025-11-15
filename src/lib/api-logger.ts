@@ -1,30 +1,17 @@
 interface PuterAPILog {
   method: string;
-  params: {
-    prompt?: string;
-    imageUrl?: string;
-    messages?: any[];
-    options?: any;
-    model?: string;
-  };
-  response?: any;
-  error?: any;
+  model?: string;
   duration: number;
   timestamp: number;
+  success: boolean;
 }
 
 interface OpenRouterAPILog {
   method: string;
   model: string;
-  params: {
-    messages?: any[];
-    temperature?: number;
-    max_tokens?: number;
-  };
-  response?: any;
-  error?: any;
   duration: number;
   timestamp: number;
+  success: boolean;
 }
 
 interface LogEntry {
@@ -41,7 +28,13 @@ export const logPuterAPICall = (apiLog: PuterAPILog) => {
     type: 'api',
     message: `Puter API Call: ${apiLog.method}`,
     timestamp: apiLog.timestamp,
-    details: apiLog,
+    details: {
+      method: apiLog.method,
+      model: apiLog.model,
+      duration: apiLog.duration,
+      success: apiLog.success,
+      // Sensitive data (params, messages, response) removed for privacy
+    },
   };
 
   // Get existing logs
@@ -49,7 +42,7 @@ export const logPuterAPICall = (apiLog: PuterAPILog) => {
   const logs: LogEntry[] = savedLogs ? JSON.parse(savedLogs) : [];
 
   // Add new log
-  const updatedLogs = [logEntry, ...logs].slice(0, 500); // Keep last 500 logs
+  const updatedLogs = [logEntry, ...logs].slice(0, 100); // Reduced to 100 entries
   localStorage.setItem('app_logs', JSON.stringify(updatedLogs));
 };
 
@@ -59,7 +52,13 @@ export const logOpenRouterAPICall = (apiLog: OpenRouterAPILog) => {
     type: 'api',
     message: `OpenRouter API Call: ${apiLog.model}`,
     timestamp: apiLog.timestamp,
-    details: apiLog,
+    details: {
+      method: apiLog.method,
+      model: apiLog.model,
+      duration: apiLog.duration,
+      success: apiLog.success,
+      // Sensitive data (params, messages, response) removed for privacy
+    },
   };
 
   // Get existing logs
@@ -67,7 +66,7 @@ export const logOpenRouterAPICall = (apiLog: OpenRouterAPILog) => {
   const logs: LogEntry[] = savedLogs ? JSON.parse(savedLogs) : [];
 
   // Add new log
-  const updatedLogs = [logEntry, ...logs].slice(0, 500); // Keep last 500 logs
+  const updatedLogs = [logEntry, ...logs].slice(0, 100); // Reduced to 100 entries
   localStorage.setItem('app_logs', JSON.stringify(updatedLogs));
 };
 
@@ -78,19 +77,19 @@ export const createPuterAPILogger = () => {
     logSuccess: (method: string, params: any, response: any) => {
       logPuterAPICall({
         method,
-        params,
-        response: typeof response === 'string' ? response.substring(0, 500) + '...' : response,
+        model: params?.model,
         duration: Date.now() - startTime,
         timestamp: startTime,
+        success: true,
       });
     },
     logError: (method: string, params: any, error: any) => {
       logPuterAPICall({
         method,
-        params,
-        error: error?.message || String(error),
+        model: params?.model,
         duration: Date.now() - startTime,
         timestamp: startTime,
+        success: false,
       });
     },
   };
@@ -104,20 +103,18 @@ export const createOpenRouterAPILogger = () => {
       logOpenRouterAPICall({
         method: 'chat.completions',
         model,
-        params,
-        response: typeof response === 'string' ? response.substring(0, 500) + '...' : response,
         duration: Date.now() - startTime,
         timestamp: startTime,
+        success: true,
       });
     },
     logError: (model: string, params: any, error: any) => {
       logOpenRouterAPICall({
         method: 'chat.completions',
         model,
-        params,
-        error: error?.message || String(error),
         duration: Date.now() - startTime,
         timestamp: startTime,
+        success: false,
       });
     },
   };

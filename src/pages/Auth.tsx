@@ -69,8 +69,14 @@ const Auth = () => {
   const handleGuestMode = async () => {
     try {
       setIsSubmitting(true);
-      // Enable guest mode without backend auth; restrict access via guard
-      localStorage.setItem('guestMode', 'true');
+      // Use Supabase anonymous authentication for proper guest sessions
+      const { error } = await supabase.auth.signInAnonymously();
+      
+      if (error) {
+        toast.error('Failed to start guest session: ' + error.message);
+        return;
+      }
+      
       toast.success('Guest session started');
       navigate('/chat');
     } catch (error) {

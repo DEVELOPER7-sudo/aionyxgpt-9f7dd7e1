@@ -11,17 +11,15 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  const isGuest = typeof window !== 'undefined' && localStorage.getItem('guestMode') === 'true';
-
   useEffect(() => {
-    if (!loading && !user && !isGuest && location.pathname === '/chat') {
+    if (!loading && !user && location.pathname === '/chat') {
       toast.error("You haven't signed in or chosen Guest.");
     }
-  }, [loading, user, isGuest, location.pathname]);
+  }, [loading, user, location.pathname]);
 
   if (loading) return null; // Let /auth show its loader
 
-  if (!user && !isGuest) {
+  if (!user) {
     return <Navigate to="/auth" replace />;
   }
 
