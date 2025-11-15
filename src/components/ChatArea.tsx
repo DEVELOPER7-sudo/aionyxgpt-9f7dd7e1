@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -29,9 +28,6 @@ import {
   ThumbsUp,
   ThumbsDown,
   RotateCcw,
-  Download,
-  Edit2,
-  Trash2,
   Loader2,
   Globe,
   Search as SearchIcon,
@@ -45,8 +41,6 @@ import { cn } from '@/lib/utils';
 interface ChatAreaProps {
   chat: Chat | null;
   onSendMessage: (content: string, imageData?: { imageUrl: string; prompt: string }, selectedTriggers?: string[]) => void;
-  onUpdateTitle: (chatId: string, title: string) => void;
-  onDeleteChat: (chatId: string) => Promise<void>;
   onRegenerateMessage: (messageId: string) => void;
   onEditMessage: (messageId: string, newContent: string) => void;
   isLoading: boolean;
@@ -63,8 +57,6 @@ interface ChatAreaProps {
 const ChatArea = ({
   chat,
   onSendMessage,
-  onUpdateTitle,
-  onDeleteChat,
   onRegenerateMessage,
   onEditMessage,
   isLoading,
@@ -78,8 +70,6 @@ const ChatArea = ({
   onTaskModeChange,
 }: ChatAreaProps) => {
   const [input, setInput] = useState('');
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editedTitle, setEditedTitle] = useState('');
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingMessageContent, setEditingMessageContent] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -234,18 +224,6 @@ const ChatArea = ({
     toast.success('Copied to clipboard');
   };
 
-  const saveTitle = () => {
-    if (chat && editedTitle.trim()) {
-      // Validate title length
-      if (editedTitle.length > 200) {
-        toast.error('Title too long (max 200 characters)');
-        return;
-      }
-      onUpdateTitle(chat.id, editedTitle);
-      setIsEditingTitle(false);
-    }
-  };
-
   const startEditingMessage = (messageId: string, content: string) => {
     setEditingMessageId(messageId);
     setEditingMessageContent(content);
@@ -290,64 +268,6 @@ const ChatArea = ({
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden">
-      {/* Header */}
-      <div className="border-b border-border p-3 md:p-4 flex items-center justify-between bg-card/50 backdrop-blur-sm flex-shrink-0 z-10">
-        <div className="flex-1 min-w-0">
-          {isEditingTitle ? (
-            <Input
-              value={editedTitle}
-              onChange={(e) => setEditedTitle(e.target.value)}
-              onBlur={saveTitle}
-              onKeyPress={(e) => e.key === 'Enter' && saveTitle()}
-              className="max-w-md"
-              autoFocus
-            />
-          ) : (
-            <div className="flex items-center gap-2">
-              <h2 className="text-base md:text-lg font-semibold truncate">{chat.title}</h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 flex-shrink-0"
-                onClick={() => {
-                  setEditedTitle(chat.title);
-                  setIsEditingTitle(true);
-                }}
-              >
-                <Edit2 className="w-4 h-4" />
-              </Button>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 md:h-10 md:w-10"
-            onClick={() => {
-              const data = JSON.stringify(chat, null, 2);
-              const blob = new Blob([data], { type: 'application/json' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `${chat.title}.json`;
-              a.click();
-              toast.success('Chat exported');
-            }}
-          >
-            <Download className="w-4 h-4 md:w-5 md:h-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 md:h-10 md:w-10 hover:text-destructive"
-            onClick={() => onDeleteChat(chat.id)}
-          >
-            <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
-          </Button>
-        </div>
-      </div>
-
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-2 md:p-4" ref={scrollRef}>
         {chat.messages.length === 0 ? (

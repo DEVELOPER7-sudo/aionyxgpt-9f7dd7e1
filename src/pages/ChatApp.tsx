@@ -971,8 +971,6 @@ const ChatApp = () => {
           <ChatArea
             chat={currentChat}
             onSendMessage={handleSendMessage}
-            onUpdateTitle={handleUpdateTitle}
-            onDeleteChat={handleDeleteChat}
             onRegenerateMessage={handleRegenerateMessage}
             onEditMessage={handleEditMessage}
             isLoading={isLoading}
