@@ -15,6 +15,7 @@ import {
   FileText,
   Zap,
   Bot,
+  BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Chat } from '@/types/chat';
@@ -25,7 +26,7 @@ interface ChatSidebarProps {
   onNewChat: () => void;
   onSelectChat: (chatId: string) => void;
   onDeleteChat: (chatId: string) => Promise<void>;
-  onNavigate: (section: 'images' | 'memory' | 'search' | 'settings' | 'logs' | 'triggers' | 'bots') => void;
+  onNavigate: (section: 'images' | 'memory' | 'search' | 'settings' | 'logs' | 'triggers' | 'bots' | 'analytics') => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
 }
@@ -187,14 +188,23 @@ const ChatSidebar = ({
           variant="ghost"
           className="w-full justify-start hover:bg-sidebar-accent"
           size={collapsed ? 'icon' : 'default'}
+          onClick={() => onNavigate('analytics')}
+        >
+          <BarChart3 className="w-5 h-5" />
+          {!collapsed && <span className="ml-2">Analytics</span>}
+        </Button>
+        <Button
+          variant="ghost"
+          className="w-full justify-start hover:bg-sidebar-accent"
+          size={collapsed ? 'icon' : 'default'}
           onClick={() => onNavigate('settings')}
         >
           <Settings className="w-5 h-5" />
           {!collapsed && <span className="ml-2">Settings</span>}
         </Button>
-      </div>
-    </div>
-  );
-};
+        </div>
+        </div>
+        );
+        };
 
-export default ChatSidebar;
+        export default ChatSidebar;

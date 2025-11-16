@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -12,8 +13,9 @@ import { getAllTextModels, IMAGE_MODELS } from '@/lib/models';
 import { beautifyModelName, getCustomModels, addCustomModel, removeCustomModel } from '@/lib/model-utils';
 import { getAllTriggers } from '@/lib/triggers';
 import { toast } from 'sonner';
-import { Download, Upload, LogOut, LogIn, Trash2, Plus, X } from 'lucide-react';
+import { Download, Upload, LogOut, LogIn, Trash2, Plus, X, BarChart3 } from 'lucide-react';
 import { ThemeCustomizer } from '@/components/ThemeCustomizer';
+import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 
 interface SettingsPanelProps {
   settings: AppSettings;
@@ -107,12 +109,24 @@ const SettingsPanel = ({
 
   return (
     <div className="h-screen w-full overflow-y-auto overflow-x-hidden">
-      <div className="max-w-5xl mx-auto p-3 md:p-6 space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">Configure your AI models, theme, and data preferences</p>
+      <div className="max-w-6xl mx-auto p-3 md:p-6 space-y-6">
+      <div className="space-y-2 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Settings</h1>
+          <p className="text-muted-foreground">Configure your AI models, theme, and data preferences</p>
+        </div>
       </div>
 
+      <Tabs defaultValue="settings" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="settings">Preferences</TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Analytics
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="settings" className="space-y-6">
       {/* Theme Customization */}
       <ThemeCustomizer settings={localSettings} onUpdateSettings={onUpdateSettings} />
 
@@ -551,10 +565,22 @@ const SettingsPanel = ({
             </a>
           </div>
         </div>
-      </Card>
-      </div>
-    </div>
-  );
-};
+        </Card>
+        </TabsContent>
 
-export default SettingsPanel;
+        <TabsContent value="analytics" className="space-y-6">
+         <div className="space-y-4">
+           <div>
+             <h2 className="text-2xl font-bold mb-2">Analytics Dashboard</h2>
+             <p className="text-muted-foreground">Track your chat activity and model usage</p>
+           </div>
+           <AnalyticsDashboard />
+         </div>
+        </TabsContent>
+        </Tabs>
+        </div>
+        </div>
+        );
+        };
+
+        export default SettingsPanel;

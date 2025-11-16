@@ -12,6 +12,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useChatPersistence } from '@/hooks/useChatPersistence';
 import { useAuth } from '@/hooks/useAuth';
 import { useChatSync } from '@/hooks/useChatSync';
+import { useAnalytics } from '@/hooks/useFeatures';
 import MotionBackground from '@/components/MotionBackground';
 import { createPuterAPILogger, createOpenRouterAPILogger } from '@/lib/api-logger';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +28,7 @@ const SearchPanel = lazy(() => import('@/components/SearchPanel'));
 const LogCenter = lazy(() => import('@/components/LogCenter'));
 const TriggerGallery = lazy(() => import('@/components/TriggerGallery'));
 const CustomBotsManager = lazy(() => import('@/components/CustomBotsManager'));
+const AnalyticsPanel = lazy(() => import('@/components/AnalyticsPanel'));
 
 const ChatApp = () => {
   const [chats, setChats] = useState<Chat[]>([]);
@@ -35,7 +37,7 @@ const ChatApp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'chat' | 'images' | 'memory' | 'search' | 'settings' | 'logs' | 'triggers' | 'bots'>('chat');
+  const [currentView, setCurrentView] = useState<'chat' | 'images' | 'memory' | 'search' | 'settings' | 'logs' | 'triggers' | 'bots' | 'analytics'>('chat');
   const [webSearchEnabled, setWebSearchEnabled] = useState(settings.enableWebSearch);
   const [deepSearchEnabled, setDeepSearchEnabled] = useState(settings.enableDeepSearch);
   const [taskMode, setTaskMode] = useState<'standard' | 'reasoning' | 'research' | 'creative'>(settings.taskMode || 'standard');
@@ -43,6 +45,7 @@ const ChatApp = () => {
   
   const { user, signOut, loading: authLoading } = useAuth();
   const { playMessageComplete, playError } = useSoundEffects();
+  const { recordStats } = useAnalytics();
 
   // Apply theme
   useTheme(settings);
@@ -436,6 +439,10 @@ const ChatApp = () => {
         setAbortController(null);
       }
 
+      // Record analytics
+      const tokenEstimate = Math.ceil(fullResponse.length / 4);
+      recordStats(modelId, tokenEstimate);
+      
       playMessageComplete();
       logger.logSuccess('puter.ai.chat (streaming)', chatParams, fullResponse);
     } catch (streamError: any) {
@@ -649,6 +656,10 @@ const ChatApp = () => {
         }
       }
 
+      // Record analytics
+      const tokenEstimate = Math.ceil(fullResponse.length / 4);
+      recordStats(modelId, tokenEstimate);
+
       playMessageComplete();
       logger.logSuccess(modelId, apiParams, fullResponse);
       
@@ -763,6 +774,10 @@ const ChatApp = () => {
           setChats(prevChats => prevChats.map(c => c.id === chatId ? { ...c, messages: currentMessages } : c));
         }
         
+        // Record analytics
+        const tokenEstimate = Math.ceil(fullResponse.length / 4);
+        recordStats(settings.textModel, tokenEstimate);
+        
         playMessageComplete();
         logger.logSuccess('puter.ai.chat (vision)', { prompt, imageUrl, model: settings.textModel }, fullResponse);
         console.log('[Vision] Analysis complete');
@@ -844,7 +859,7 @@ const ChatApp = () => {
     toast.success(`Image generated with ${settings.imageModel}`);
   };
 
-  const handleNavigate = (section: 'images' | 'memory' | 'search' | 'settings' | 'logs') => {
+  const handleNavigate = (section: 'images' | 'memory' | 'search' | 'settings' | 'logs' | 'analytics') => {
     setCurrentView(section);
     setMobileMenuOpen(false);
   };
@@ -1044,6 +1059,7 @@ const ChatApp = () => {
           )}
           {currentView === 'logs' && <LogCenter />}
           {currentView === 'triggers' && <TriggerGallery />}
+          {currentView === 'analytics' && <AnalyticsPanel />}
           {currentView === 'bots' && (
             <CustomBotsManager 
               onSelectBot={(bot) => {

@@ -14,12 +14,14 @@ import 'katex/dist/katex.min.css';
 import { useVisionAI } from '@/hooks/useVisionAI';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
+import { useAnalytics } from '@/hooks/useFeatures';
 import { toast } from 'sonner';
 
 import LoadingDots from '@/components/LoadingDots';
 import WelcomeMessage from '@/components/WelcomeMessage';
 import TriggerBar from '@/components/TriggerBar';
 import TriggerTagWrapper from '@/components/TriggerTagWrapper';
+import { BookmarkButton } from '@/components/BookmarkButton';
 import {
   Send,
   Mic,
@@ -86,6 +88,7 @@ const ChatArea = ({
   const { analyzeImage, isAnalyzing } = useVisionAI();
   const { uploadFile, isUploading } = useFileUpload();
   const { playButtonClick, playMessageSent } = useSoundEffects();
+  const { recordStats } = useAnalytics();
 
   // Extract thinking and main content separately - handle incomplete tags
   const processThinking = (content: string): { thinking: string | null; main: string; isThinking: boolean } => {
@@ -438,15 +441,19 @@ const ChatArea = ({
                 )}
                 {message.role === 'assistant' && (
                    <div className="flex gap-2 mt-3 pt-3 border-t border-border animate-fade-in">
-                     <Button
-                       variant="ghost"
-                       size="icon"
-                       className="h-6 w-6 transition-all duration-200 hover:scale-110"
-                       onClick={() => copyToClipboard(message.content)}
-                       title="Copy to clipboard"
-                     >
-                       <Copy className="w-4 h-4" />
-                     </Button>
+                      <BookmarkButton 
+                        messageId={message.id}
+                        className="h-6 w-6 transition-all duration-200 hover:scale-110"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 transition-all duration-200 hover:scale-110"
+                        onClick={() => copyToClipboard(message.content)}
+                        title="Copy to clipboard"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
                      <Button 
                        variant="ghost" 
                        size="icon" 

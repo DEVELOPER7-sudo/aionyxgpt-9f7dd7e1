@@ -1,4 +1,4 @@
-import { supabase } from '../supabase';
+import { supabase } from '../../integrations/supabase/client';
 import { SharedChat, MessageComment } from '../../types/features';
 import * as bcrypt from 'bcryptjs';
 
