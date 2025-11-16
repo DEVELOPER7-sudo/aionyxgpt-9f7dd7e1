@@ -972,6 +972,7 @@ const ChatApp = () => {
             'transition-all duration-300 ease-in-out',
             'md:static md:translate-x-0',
             'fixed inset-y-0 left-0 z-40 w-72 md:w-auto',
+            'bg-sidebar-background border-r border-sidebar-border',
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           )}
         >
@@ -995,7 +996,7 @@ const ChatApp = () => {
       {/* Overlay for mobile */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}

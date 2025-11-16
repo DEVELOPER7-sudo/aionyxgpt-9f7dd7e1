@@ -50,27 +50,29 @@ const Header = ({ onMenuClick, showMenuButton = false, user, onSignOut }: Header
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center px-4 animate-fade-in">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center px-4 animate-fade-in gap-4">
         {showMenuButton && (
           <Button
             variant="ghost"
             size="icon"
             onClick={onMenuClick}
-            className="md:hidden mr-2 transition-all duration-200 hover:scale-110"
+            className="md:hidden mr-1 transition-all duration-200 hover:bg-primary/20 hover:scale-110"
           >
             <Menu className="h-5 w-5" />
           </Button>
         )}
         
-        <div className="flex items-center gap-2 flex-1">
-          <div className="flex items-center gap-2 group cursor-pointer">
-            <img src={onyxLogo} alt="OnyxGPT logo" className="h-8 w-8 rounded-md shadow-sm" />
-            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient bg-300% transition-all duration-300 group-hover:scale-105">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="flex items-center gap-2 group cursor-pointer flex-shrink-0">
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary to-secondary/80 shadow-lg">
+              <img src={onyxLogo} alt="OnyxGPT logo" className="h-7 w-7 rounded-sm" />
+            </div>
+            <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-gradient transition-all duration-300 group-hover:scale-105 hidden sm:block">
               OnyxGPT
             </h1>
           </div>
-          <span className="hidden sm:inline text-xs text-muted-foreground ml-2 animate-fade-in">
+          <span className="hidden lg:inline text-xs font-medium text-muted-foreground animate-fade-in">
             500+ AI Models
           </span>
         </div>
@@ -78,9 +80,11 @@ const Header = ({ onMenuClick, showMenuButton = false, user, onSignOut }: Header
         {user || puterUser ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-2 transition-all duration-200 hover:scale-105">
-                <User className="h-4 w-4" />
-                <span className="hidden md:inline">{puterUser?.username || user?.email || 'User'}</span>
+              <Button variant="ghost" className="gap-2 transition-all duration-200 hover:bg-primary/20 hover:scale-105 flex-shrink-0">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                  <User className="h-4 w-4 text-primary-foreground" />
+                </div>
+                <span className="hidden md:inline text-sm font-medium">{puterUser?.username || user?.email || 'User'}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-72 animate-scale-in">
@@ -123,9 +127,11 @@ const Header = ({ onMenuClick, showMenuButton = false, user, onSignOut }: Header
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Button variant="outline" className="gap-2 transition-all duration-200 hover:scale-105">
-            <User className="h-4 w-4" />
-            <span className="hidden sm:inline">Guest Mode</span>
+          <Button variant="outline" className="gap-2 transition-all duration-200 hover:bg-primary/20 hover:scale-105 flex-shrink-0">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <User className="h-4 w-4 text-primary" />
+            </div>
+            <span className="hidden sm:inline text-sm font-medium">Guest</span>
           </Button>
         )}
       </div>
