@@ -47,17 +47,24 @@ export const AnalyticsDashboard = () => {
             try {
                 setPuterLoading(true);
                 // @ts-ignore - puter is a global object
-                if (typeof puter !== 'undefined' && puter.auth) {
+                const puter = window.puter;
+
+                if (puter && puter.auth && typeof puter.auth.getMonthlyUsage === 'function') {
                     // @ts-ignore
                     const usage = await puter.auth.getMonthlyUsage();
-                    setPuterUsage({
-                        total: usage.total || 0,
-                        remaining: usage.allowanceInfo?.remaining || 0,
-                        monthUsageAllowance: usage.allowanceInfo?.monthUsageAllowance || 0,
-                        models: usage.models || {},
-                        appTotals: usage.appTotals || {},
-                        lastUpdated: new Date(),
-                    });
+
+                    if (usage) {
+                        setPuterUsage({
+                            total: usage.total || 0,
+                            remaining: usage.allowanceInfo?.remaining || 0,
+                            monthUsageAllowance: usage.allowanceInfo?.monthUsageAllowance || 0,
+                            models: usage.models || {},
+                            appTotals: usage.appTotals || {},
+                            lastUpdated: new Date(),
+                        });
+                    }
+                } else {
+                    console.warn('Puter API not available');
                 }
             } catch (err) {
                 console.error('Error fetching Puter usage:', err);
@@ -66,9 +73,19 @@ export const AnalyticsDashboard = () => {
             }
         };
 
-        fetchPuterUsage();
-        const interval = setInterval(fetchPuterUsage, 10000); // Update every 10 seconds
-        return () => clearInterval(interval);
+        // Wait for puter to be loaded
+        const checkAndFetch = () => {
+            // @ts-ignore
+            if (window.puter) {
+                fetchPuterUsage();
+                const interval = setInterval(fetchPuterUsage, 10000); // Update every 10 seconds
+                return () => clearInterval(interval);
+            } else {
+                setTimeout(checkAndFetch, 500);
+            }
+        };
+
+        checkAndFetch();
     }, []);
 
     const handleDaysChange = (days: number) => {
