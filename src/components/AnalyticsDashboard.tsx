@@ -146,18 +146,18 @@ export const AnalyticsDashboard = () => {
 
             {/* Customization Settings */}
             {showSettings && (
-                <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                <Card className="bg-slate-900 border-slate-700">
                     <CardHeader>
-                        <CardTitle className="text-sm">Dashboard Customization</CardTitle>
-                        <CardDescription>Configure layout and chart display options</CardDescription>
+                        <CardTitle className="text-sm text-white">Dashboard Customization</CardTitle>
+                        <CardDescription className="text-slate-300">Configure layout and chart display options</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-6 text-white">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Chart Height */}
                             <div className="space-y-3">
                                 <div className="flex justify-between">
                                     <label className="text-sm font-semibold">Chart Height</label>
-                                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">{config.chartHeight}px</span>
+                                    <span className="text-sm font-medium text-cyan-400">{config.chartHeight}px</span>
                                 </div>
                                 <input
                                     type="range"
@@ -166,9 +166,9 @@ export const AnalyticsDashboard = () => {
                                     step="50"
                                     value={config.chartHeight}
                                     onChange={(e) => updateConfig('chartHeight', parseInt(e.target.value))}
-                                    className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400"
                                 />
-                                <div className="flex justify-between text-xs text-muted-foreground">
+                                <div className="flex justify-between text-xs text-slate-400">
                                     <span>200px</span>
                                     <span>600px</span>
                                 </div>
@@ -181,7 +181,7 @@ export const AnalyticsDashboard = () => {
                                     <Button
                                         variant={config.cardLayout === 'grid' ? 'default' : 'outline'}
                                         size="sm"
-                                        className="flex-1"
+                                        className={`flex-1 ${config.cardLayout === 'grid' ? 'bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-600' : 'border-slate-600 text-white hover:bg-slate-800'}`}
                                         onClick={() => updateConfig('cardLayout', 'grid')}
                                     >
                                         Grid
@@ -189,7 +189,7 @@ export const AnalyticsDashboard = () => {
                                     <Button
                                         variant={config.cardLayout === 'single' ? 'default' : 'outline'}
                                         size="sm"
-                                        className="flex-1"
+                                        className={`flex-1 ${config.cardLayout === 'single' ? 'bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-600' : 'border-slate-600 text-white hover:bg-slate-800'}`}
                                         onClick={() => updateConfig('cardLayout', 'single')}
                                     >
                                         Single
@@ -204,10 +204,10 @@ export const AnalyticsDashboard = () => {
                                         type="checkbox"
                                         checked={config.fullWidth}
                                         onChange={(e) => updateConfig('fullWidth', e.target.checked)}
-                                        className="w-4 h-4 rounded"
+                                        className="w-4 h-4 rounded accent-cyan-400"
                                     />
                                     <span>Full Width Layout</span>
-                                    {config.fullWidth && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-0.5 rounded">Active</span>}
+                                    {config.fullWidth && <span className="text-xs bg-cyan-600 text-white px-2 py-0.5 rounded">Active</span>}
                                 </label>
                             </div>
 
@@ -218,10 +218,10 @@ export const AnalyticsDashboard = () => {
                                         type="checkbox"
                                         checked={config.compactView}
                                         onChange={(e) => updateConfig('compactView', e.target.checked)}
-                                        className="w-4 h-4 rounded"
+                                        className="w-4 h-4 rounded accent-cyan-400"
                                     />
                                     <span>Compact View</span>
-                                    {config.compactView && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-0.5 rounded">Active</span>}
+                                    {config.compactView && <span className="text-xs bg-cyan-600 text-white px-2 py-0.5 rounded">Active</span>}
                                 </label>
                             </div>
 
@@ -232,10 +232,10 @@ export const AnalyticsDashboard = () => {
                                         type="checkbox"
                                         checked={config.showGridLines}
                                         onChange={(e) => updateConfig('showGridLines', e.target.checked)}
-                                        className="w-4 h-4 rounded"
+                                        className="w-4 h-4 rounded accent-cyan-400"
                                     />
                                     <span>Show Grid Lines</span>
-                                    {config.showGridLines && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-0.5 rounded">Active</span>}
+                                    {config.showGridLines && <span className="text-xs bg-cyan-600 text-white px-2 py-0.5 rounded">Active</span>}
                                 </label>
                             </div>
 
@@ -246,18 +246,18 @@ export const AnalyticsDashboard = () => {
                                         type="checkbox"
                                         checked={config.hideAnimations}
                                         onChange={(e) => updateConfig('hideAnimations', e.target.checked)}
-                                        className="w-4 h-4 rounded"
+                                        className="w-4 h-4 rounded accent-cyan-400"
                                     />
                                     <span>Reduce Animations</span>
-                                    {config.hideAnimations && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-0.5 rounded">Active</span>}
+                                    {config.hideAnimations && <span className="text-xs bg-cyan-600 text-white px-2 py-0.5 rounded">Active</span>}
                                 </label>
                             </div>
                         </div>
 
                         {/* Settings Summary */}
-                        <div className="mt-6 pt-4 border-t border-blue-200 dark:border-blue-800">
-                            <p className="text-xs text-muted-foreground">
-                                <strong>Current Settings:</strong> {config.fullWidth ? 'Full width' : 'Max width'} • {config.cardLayout} layout • {config.chartHeight}px charts {config.showGridLines ? '+ gridlines' : ''} {config.hideAnimations ? '• No animations' : '• With animations'}
+                        <div className="mt-6 pt-4 border-t border-slate-700">
+                            <p className="text-xs text-slate-300">
+                                <strong className="text-cyan-400">Current Settings:</strong> {config.fullWidth ? 'Full width' : 'Max width'} • {config.cardLayout} layout • {config.chartHeight}px charts {config.showGridLines ? '+ gridlines' : ''} {config.hideAnimations ? '• No animations' : '• With animations'}
                             </p>
                         </div>
                     </CardContent>
@@ -368,19 +368,19 @@ export const AnalyticsDashboard = () => {
                                         <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border">
                                             <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Used</p>
                                             <p className="text-2xl font-bold text-blue-900 dark:text-blue-100 mt-2">
-                                                ${(puterUsage.total / 1000000).toFixed(2)}M
+                                                {(puterUsage.total / 1000000).toFixed(2)}M
                                             </p>
                                         </div>
                                         <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg border">
                                             <p className="text-sm font-medium text-green-600 dark:text-green-400">Remaining</p>
                                             <p className="text-2xl font-bold text-green-900 dark:text-green-100 mt-2">
-                                                ${(puterUsage.remaining / 1000000).toFixed(2)}M
+                                                {(puterUsage.remaining / 1000000).toFixed(2)}M
                                             </p>
                                         </div>
                                         <div className="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg border">
                                             <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Monthly Allowance</p>
                                             <p className="text-2xl font-bold text-purple-900 dark:text-purple-100 mt-2">
-                                                ${(puterUsage.monthUsageAllowance / 1000000).toFixed(2)}M
+                                                {(puterUsage.monthUsageAllowance / 1000000).toFixed(2)}M
                                             </p>
                                         </div>
                                     </div>
